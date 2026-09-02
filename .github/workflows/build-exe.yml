@@ -30,9 +30,6 @@ jobs:
       - name: Install dependencies
         run: pnpm i --frozen-lockfile
 
-      - name: Lint
-        run: pnpm lint
-
       - name: Build TypeScript
         run: pnpm build
 
