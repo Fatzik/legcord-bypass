@@ -1,0 +1,30 @@
+* {
+    outline: none;
+}
+[class^="socialLinks-"] + [class^="info-"] {
+    padding-right: 0;
+}
+#ac-ver {
+    text-transform: none;
+    cursor: pointer;
+    color: var(--text-muted);
+}
+
+div:has(> span [data-list-item-id="guildsnav___app-download-button"]) {
+    display: none;
+}
+
+/* custom keybinds are not supported on web information */
+.container__6436f.info__6436f.browserNotice__740f2 {
+    visibility: hidden;
+    display: block;
+}
+.container__6436f.info__6436f.browserNotice__740f2:after {
+    content: "You can modify global keybinds using the keybind maker on the left sidebar";
+    visibility: visible;
+}
+
+[class*="textContainer"]:has(code) {
+    scrollbar-color: var(--scrollbar-auto-scrollbar-color-thumb) var(--scrollbar-auto-scrollbar-color-track);
+    scrollbar-width: thin;
+}

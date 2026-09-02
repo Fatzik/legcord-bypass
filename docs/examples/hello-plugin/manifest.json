@@ -1,0 +1,11 @@
+{
+    "id": "hello-plugin",
+    "name": "Hello Plugin",
+    "version": "1.0.0",
+    "description": "Example plugin showing main/preload/renderer entries and function patching.",
+    "author": "Legcord Docs",
+    "compatibleVersions": ["*"],
+    "main": "main.js",
+    "preload": "preload.js",
+    "renderer": "renderer.js"
+}

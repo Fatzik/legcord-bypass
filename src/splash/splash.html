@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Legcord</title>
+        <script>
+            window.onbeforeunload = () => {
+                const style = document.createElement("style");
+                style.textContent = "body { display: none; }";
+                document.head.append(style);
+            };
+        </script>
+        <style>
+            /*MIT License
+
+            Copyright (c) 2022 GooseMod
+
+            Permission is hereby granted, free of charge, to any person obtaining a copy
+            of this software and associated documentation files (the "Software"), to deal
+            in the Software without restriction, including without limitation the rights
+            to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+            copies of the Software, and to permit persons to whom the Software is
+            furnished to do so, subject to the following conditions:
+
+            The above copyright notice and this permission notice shall be included in all
+            copies or substantial portions of the Software.
+
+            THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+            IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+            FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+            AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+            LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+            OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+            SOFTWARE.*/
+            :root {
+                --background-primary: #282b30;
+                --background-secondary: rgba(255, 255, 255, 0.1);
+                --brand-experiment: #7289da;
+                --header-primary: #fff;
+                --text-muted: #72767d;
+            }
+
+            @font-face {
+                font-family: Whitney;
+                font-weight: 400;
+                font-style: normal;
+                src: url(https://legcord.app/whitney_400.woff) format("woff");
+            }
+
+            html,
+            body {
+                -webkit-app-region: drag;
+                overflow: hidden;
+                margin: 0;
+                padding: 0;
+                width: 100%;
+                height: 100%;
+                background: var(--background-primary);
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+            }
+
+            * {
+                font-family: "Whitney", sans-serif;
+                box-sizing: border-box;
+                -webkit-user-select: none;
+                user-select: none;
+                cursor: default;
+            }
+
+            video {
+                display: block;
+                width: 200px;
+                height: 150px;
+                object-fit: cover;
+                margin: 0 auto;
+            }
+
+            #text-splashscreen {
+                font-size: 16px;
+                text-align: center;
+                color: var(--header-primary);
+                font-weight: 400;
+                font-style: italic;
+                text-transform: uppercase;
+                width: 100%;
+            }
+
+            #bar-container,
+            #bar-fill {
+                width: 180px;
+                height: 8px;
+                border-radius: 4px;
+                visibility: hidden;
+            }
+
+            #bar-container {
+                background-color: var(--background-secondary);
+                position: relative;
+                margin-top: 12px;
+            }
+
+            #bar-fill {
+                background-color: var(--brand-experiment);
+                width: 0;
+            }
+
+            #debug {
+                position: absolute;
+                bottom: 6px;
+                right: 6px;
+                text-align: right;
+                font-size: 10px;
+                color: var(--text-muted);
+                white-space: pre;
+            }
+
+            #bypass {
+                display: none;
+                flex-direction: column;
+                align-items: center;
+                gap: 8px;
+                margin-top: 16px;
+                padding: 0 12px;
+            }
+
+            #bypass.visible {
+                display: flex;
+            }
+
+            #bypass-detail {
+                font-size: 12px;
+                text-align: center;
+                color: var(--text-muted);
+                line-height: 1.4;
+                min-height: 34px;
+            }
+
+            .spinner {
+                width: 26px;
+                height: 26px;
+                border-radius: 50%;
+                border: 3px solid var(--background-secondary);
+                border-top-color: var(--brand-experiment);
+                animation: spin 0.9s linear infinite;
+            }
+
+            #bypass.done .spinner {
+                animation: none;
+                border-top-color: #3ba55d;
+                transform: rotate(0deg);
+            }
+
+            #bypass.error .spinner {
+                animation: none;
+                border-top-color: #ed4245;
+                transform: rotate(0deg);
+            }
+
+            @keyframes spin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+
+            img.logo {
+                width: 272px;
+            }
+
+            button {
+                background: var(--brand-experiment);
+                color: var(--header-primary);
+                outline: none;
+                border: none;
+                border-radius: 5px;
+                padding: 8px;
+                -webkit-user-select: all;
+                user-select: all;
+                margin: 0 auto;
+                margin-top: 10px;
+                -webkit-app-region: no-drag;
+                transition: 0.17s ease;
+                display: none;
+            }
+            button:hover {
+                cursor: grab;
+            }
+
+        </style>
+    </head>
+
+    <body>
+        <div class="container">
+            <!-- biome-ignore lint/a11y/useMediaCaption: silent logo animation, no audio -->
+            <video autoplay loop class="logo" id="splashscreen-legcord">
+                <source src="legcord://assets/Loading.webm" type="video/webm" />
+            </video>
+            <p id="text-splashscreen"></p>
+            <div id="bypass">
+                <div class="spinner"></div>
+                <p id="bypass-detail"></p>
+            </div>
+            <button id="ignore" type="button">Start anyway</button>
+        </div>
+    </body>
+    <script>
+        async function loadLang() {
+            const text = document.getElementById("text-splashscreen");
+            const bypassEl = document.getElementById("bypass");
+            const bypassDetail = document.getElementById("bypass-detail");
+            const terminalStages = new Set(["direct", "active", "error"]);
+
+            function render(snapshot) {
+                bypassEl.classList.remove("done", "error");
+                if (snapshot.stage === "active" || snapshot.stage === "direct") bypassEl.classList.add("done");
+                if (snapshot.stage === "error") bypassEl.classList.add("error");
+                bypassDetail.textContent = snapshot.detail || "";
+            }
+
+            function waitForBypass() {
+                return new Promise((resolve) => {
+                    if (!internal.bypass.enabled) return resolve();
+                    bypassEl.classList.add("visible");
+                    const initial = internal.bypass.snapshot;
+                    render(initial);
+                    if (terminalStages.has(initial.stage)) return resolve();
+                    const off = internal.onBypassStatus((snapshot) => {
+                        render(snapshot);
+                        if (terminalStages.has(snapshot.stage)) {
+                            off();
+                            resolve();
+                        }
+                    });
+                    setTimeout(() => {
+                        off();
+                        resolve();
+                    }, 30000);
+                });
+            }
+
+            function check() {
+                if (internal.installState === "installing") {
+                    text.innerHTML = "Installing mods";
+                } else if (internal.installState === "done") {
+                    return true;
+                } else if (internal.installState === "modDownload") {
+                    text.innerHTML = `Updating ${internal.mods}`;
+                } else if (internal.installState === "none") {
+                    text.innerHTML = "Nothing to install.";
+                    return true;
+                } else {
+                    return true;
+                }
+            }
+
+            if (window.navigator.onLine === false) {
+                for (let i = 0; i < 5; i++) {
+                    await new Promise((r) => setTimeout(r, 1000));
+                    text.innerHTML = `${(await internal.getLang("loading_screen_offline")) + (5 - i)}s`;
+                }
+                window.internal.restart();
+            } else {
+                text.innerHTML = await internal.getLang("loading_screen_start");
+                if (internal.isDev) {
+                    console.log("Development build detected. Skipping updater.");
+                } else if (internal.isMicrosoftStore) {
+                    console.log("Microsoft Store build detected. Skipping updater.")
+                } else {
+                    const response = await fetch("https://legcord.app/latest.json");
+                    const data = await response.json();
+                    const remoteVersion = data.version.replace(/\./g, ""); // easy to compare
+                    if (remoteVersion > window.internal.version.replace(/\./g, "")) {
+                        const elem = document.createElement("img");
+                        elem.classList.add("logo");
+                        elem.src = "legcord://assets/Update.webp";
+                        document.body.prepend(elem);
+                        document.getElementById("splashscreen-legcord").remove();
+                        text.innerHTML = await internal.getLang("loading_screen_update");
+                    } else {
+                        console.log("Legcord is up to date.");
+                    }
+                }
+
+                while (check() === false) await new Promise((r) => setTimeout(r, 10));
+                await waitForBypass();
+                const delay = internal.bypass.enabled ? 1200 : 3000;
+                setTimeout(() => {
+                    window.internal.splashEnd();
+                }, delay);
+            }
+        }
+
+        loadLang();
+    </script>
+</html>

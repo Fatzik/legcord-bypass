@@ -1,0 +1,60 @@
+.card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.15);
+}
+
+.switch {
+    margin-left: auto;
+}
+
+.info {
+    flex: 1;
+    min-width: 0;
+}
+
+.eyebrow {
+    margin-bottom: 0px;
+    color: var(--text-strong);
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.btn {
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--interactive-text-active);
+
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    transition:
+        background-color 150ms,
+        color 150ms,
+        border-color 150ms;
+
+    &:hover {
+        color: var(--interactive-text-hover);
+        background: var(--background-modifier-hover);
+    }
+}
+
+.btnContainer {
+    display: flex;
+    align-items: center;
+}
+
+.card:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.18);
+}

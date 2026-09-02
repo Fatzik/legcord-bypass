@@ -1,0 +1,50 @@
+.card {
+    border: 1px solid var(--background-accent);
+    border-radius: 4px;
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+    flex-wrap: wrap;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.info {
+    align-self: flex-start;
+    flex: 1;
+    min-width: 0;
+}
+
+.eyebrow {
+    margin-bottom: 0px;
+    color: var(--text-strong);
+}
+
+.btn {
+    border: none;
+    background: none;
+    color: var(--interactive-text-active);
+    transition: opacity 250ms;
+}
+
+.btn:hover {
+    color: var(--interactive-text-hover);
+}
+
+.icon {
+    height: 20px;
+    margin-top: 2px;
+    filter: brightness(0) invert(1);
+}
+
+.mainInfo {
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 5px;
+    margin-bottom: -0.5em;
+    display: flex;
+}
+
+.title {
+    margin-right: 0.25rem;
+}

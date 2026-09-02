@@ -1,0 +1,70 @@
+name: Build Windows EXE
+
+on:
+  push:
+    branches: [dev, stable]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Prepare PNPM
+        uses: pnpm/action-setup@v6
+
+      - name: Prepare Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: package.json
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm i --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Build TypeScript
+        run: pnpm build
+
+      - name: Load Electron cache
+        uses: actions/cache/restore@v5
+        with:
+          path: .cache
+          key: electron-zips.windows-latest
+
+      - name: Build Windows installer + zip
+        run: pnpm exec electron-builder --x64 -w nsis zip
+
+      - name: Save Electron cache
+        uses: actions/cache/save@v5
+        with:
+          path: .cache
+          key: electron-zips.windows-latest
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: windows-exe
+          path: |
+            dist/*.exe
+            dist/*.zip
+          if-no-files-found: error
+
+      - name: Publish GitHub Release (on tags)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.exe
+            dist/*.zip
+          generate_release_notes: true

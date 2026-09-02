@@ -1,0 +1,9 @@
+node_modules/
+out/
+dist/
+ts-out/
+package-lock.json
+.pnpm-store
+.cache
+.DS_Store
+scripts/spdx-license.txt

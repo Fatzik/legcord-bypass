@@ -1,0 +1,28 @@
+.toolbar {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.75rem;
+}
+
+.addBox {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    align-items: center;
+}
+
+.addBox > :first-child {
+    flex: 1;
+}
+
+.divider {
+    margin: 1.5rem 0 0.5rem;
+    border: none;
+    border-top: 1px solid var(--background-modifier-accent);
+}
+
+.importNote {
+    margin-top: 6px;
+    color: var(--text-muted, var(--text-subtle));
+}

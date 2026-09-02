@@ -1,0 +1,21 @@
+.grabBox {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+.recBtn {
+    flex: 0 0 auto;
+    width: auto;
+    white-space: nowrap;
+}
+.error {
+    color: var(--control-critical-secondary-text-default);
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 400;
+
+    margin: 0;
+    margin-left: 5px;
+}

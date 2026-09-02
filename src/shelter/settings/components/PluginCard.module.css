@@ -1,0 +1,52 @@
+.card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    background: var(--background-secondary);
+}
+
+.main {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.titleRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.title {
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.meta {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.description {
+    color: var(--text-normal);
+    font-size: 13px;
+}
+
+.targets {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}

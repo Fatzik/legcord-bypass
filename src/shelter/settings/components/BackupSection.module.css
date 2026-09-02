@@ -1,0 +1,56 @@
+.subtitle {
+    max-width: 42rem;
+    line-height: 1.35;
+}
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+}
+.modalEyebrow {
+    color: var(--header-secondary);
+}
+
+.actions {
+    display: flex;
+    justify-content: space-between;
+    border: 1px solid var(--background-modifier-accent);
+    padding: 3px;
+    border-radius: 6px;
+    margin-top: 10px;
+    margin-bottom: 20px;
+}
+.note {
+    margin-top: 8px;
+    color: var(--text-subtle);
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 400;
+    cursor: default;
+}
+.title {
+    flex: 1;
+    display: block;
+    overflow: hidden;
+    margin: 0;
+    font-size: 16px;
+    color: var(--text-strong);
+    line-height: 24px;
+    font-weight: 500;
+    word-wrap: break-word;
+    cursor: pointer;
+}
+
+.item {
+    margin-bottom: 20px;
+}
+
+.embedded {
+    margin-bottom: 0;
+}
+
+.embedded .actions {
+    margin-top: 0;
+    margin-bottom: 0;
+}

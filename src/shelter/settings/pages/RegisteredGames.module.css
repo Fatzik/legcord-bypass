@@ -1,0 +1,43 @@
+.addBox {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 3px;
+    margin-top: 1rem;
+    border: 1px solid var(--background-modifier-accent);
+    border-radius: 6px;
+}
+.dropdown {
+    width: 100%;
+    margin-bottom: 5px;
+}
+.empty {
+    margin-top: 1rem;
+    color: var(--text-muted);
+}
+.sectionHeader {
+    margin-top: 1.5rem;
+}
+.gameList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.gameRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--background-modifier-accent);
+}
+.gameRow:last-child {
+    border-bottom: none;
+}
+.gameName {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

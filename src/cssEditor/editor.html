@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Legcord Quick CSS Editor</title>
+		<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+		<link rel="stylesheet" href="legcord://assets/css/editor.css">
+	</head>
+	<body>
+		<script type="text/javascript" src="./monaco/vs/loader.js"></script>
+		<div id="editorCode"></div>
+		<script>
+			const cssCode = cssEditor.get;
+			const monacoRoot = new URL("./monaco/", window.location.href).href;
+			const vs = new URL("./monaco/vs", window.location.href).href;
+
+			require.config({
+				paths: { vs }
+			});
+
+			window.MonacoEnvironment = {
+				getWorkerUrl: () =>
+					`data:text/javascript;charset=utf-8,${encodeURIComponent(`
+						self.MonacoEnvironment = { baseUrl: ${JSON.stringify(monacoRoot)} };
+						importScripts(${JSON.stringify(`${vs}/base/worker/workerMain.js`)});
+					`)}`,
+			};
+
+			// Monaco init
+			require(["vs/editor/editor.main"], () => {
+				createEditor(editorCode);
+			});
+
+			function createEditor(editorContainer) {
+				const editor = monaco.editor.create(editorContainer, {
+					value: cssCode,
+					language: "css",
+					minimap: { enabled: false },
+					automaticLayout: true,
+					contextmenu: false,
+					fontSize: 12,
+					theme: "vs-dark",
+					scrollbar: {
+						useShadows: false,
+						vertical: "visible",
+						horizontal: "visible",
+						horizontalScrollbarSize: 12,
+						verticalScrollbarSize: 12
+					}
+				});
+
+				editor.onDidChangeModelContent(() => {
+					cssEditor.set(editor.getValue());
+				});
+			}
+		</script>
+	</body>
+</html>

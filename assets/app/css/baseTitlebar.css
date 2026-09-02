@@ -1,0 +1,52 @@
+.titlebar {
+    display: block;
+    top: 0;
+    left: 0;
+    right: 0;
+    flex-shrink: 0;
+    overflow: hidden;
+    zoom: 1;
+    box-sizing: border-box;
+    width: 100%;
+    clear: both;
+    height: var(--custom-app-top-bar-height);
+    line-height: 30px;
+    -webkit-app-region: drag;
+    user-select: none;
+    background-color: var(--background-base-lowest);
+    -webkit-user-select: none;
+    position: fixed;
+    z-index: 99999;
+}
+
+.window-title {
+    content: url("legcord://assets/Wordmark.png");
+    height: 15px;
+    margin-left: initial;
+    transform: translate(9px, 9px);
+    float: left;
+    padding: 0;
+    filter: invert(30%);
+}
+#window-controls-container {
+    float: right;
+    display: flex;
+    height: 100%;
+    position: sticky;
+    right: 0;
+    top: 0;
+    z-index: 99999999;
+    line-height: var(--custom-app-top-bar-height);
+    -webkit-app-region: no-drag;
+}
+
+#window-controls-container #minimize,
+#window-controls-container #maximize,
+#window-controls-container #quit {
+    float: left;
+    height: 100%;
+    width: 33.3%;
+    text-align: center;
+    color: var(--interactive-icon-default);
+    cursor: default;
+}
