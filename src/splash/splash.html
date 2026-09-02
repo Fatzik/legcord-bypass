@@ -149,6 +149,44 @@
                 opacity: 0.85;
             }
 
+            #done-banner {
+                display: none;
+                margin-top: 14px;
+                padding: 0 12px;
+                text-align: center;
+            }
+
+            #done-banner.visible {
+                display: block;
+                animation: pop-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+            }
+
+            #done-banner .b1 {
+                font-size: 20px;
+                font-weight: 700;
+                color: var(--header-primary);
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            #done-banner .b2 {
+                font-size: 12px;
+                color: #3ba55d;
+                margin-top: 5px;
+                font-weight: 600;
+            }
+
+            @keyframes pop-in {
+                from {
+                    opacity: 0;
+                    transform: scale(0.8);
+                }
+                to {
+                    opacity: 1;
+                    transform: scale(1);
+                }
+            }
+
             @keyframes fade-in {
                 from {
                     opacity: 0;
@@ -183,6 +221,10 @@
         <div id="actions">
             <button id="retry" type="button">Retry</button>
             <button id="ignore" type="button">Start anyway</button>
+        </div>
+        <div id="done-banner">
+            <div class="b1">РКН был отъебан</div>
+            <div class="b2">by @NNSQUADO</div>
         </div>
     </body>
     <script>
@@ -323,7 +365,10 @@
             const outcome = await waitForLaunch();
             if (outcome.state === "ok") {
                 markDone();
-                await sleep(700);
+                const banner = document.getElementById("done-banner");
+                if (banner) banner.classList.add("visible");
+                setStatus("");
+                await sleep(2600);
                 window.internal.splashEnd();
             } else {
                 markError("Discord не запустился", outcome.detail);

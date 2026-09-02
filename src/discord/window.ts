@@ -150,7 +150,6 @@ contextMenu({
     ],
 });
 function doAfterDefiningTheWindow(passedWindow: BrowserWindow): void {
-    createTray();
     if (getWindowState("isMaximized") ?? false) {
         passedWindow.setSize(DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT); //just so the whole thing doesn't cover whole screen
         passedWindow.maximize();
@@ -477,6 +476,7 @@ function doAfterDefiningTheWindow(passedWindow: BrowserWindow): void {
 
     // When splash won't run, finalize visibility here (splashEnd never fires).
     if (getConfig("skipSplash") || isBackgroundStart()) {
+        createTray();
         applyStartupWindowVisibility(passedWindow);
     }
 }

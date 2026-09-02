@@ -15,6 +15,9 @@ export function createTray() {
     if (trayIcon === "disabled") {
         return;
     }
+    if (tray) {
+        return;
+    }
     if (trayIcon === "dynamic") {
         trayIcon = "ac_plug_colored";
     }

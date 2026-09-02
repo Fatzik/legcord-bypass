@@ -42,6 +42,7 @@ import { refreshGlobalKeybinds } from "./globalKeybinds.js";
 import { getRuntimeEntries, getRuntimeScript, listPlugins, reloadPlugin, setPluginEnabled } from "./plugins/manager.js";
 import { processList, refreshProcessList } from "./rpcProcess.js";
 import { importGuilds, mainTouchBar, setVoiceState, voiceTouchBar } from "./touchbar.js";
+import { createTray } from "./tray.js";
 
 const userDataPath = app.getPath("userData");
 const storagePath = path.join(userDataPath, "/storage/");
@@ -219,6 +220,7 @@ export function registerIpc(passedWindow: BrowserWindow): void {
 
     ipcMain.on("splashEnd", () => {
         splashWindow?.close();
+        createTray();
         applyStartupWindowVisibility(passedWindow);
     });
     ipcMain.on("setLang", (_event, lang: string) => {
