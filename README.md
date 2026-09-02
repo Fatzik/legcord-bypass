@@ -1,7 +1,13 @@
 
 ![Legcord](https://github.com/user-attachments/assets/f7b007d4-44fa-4c88-96e4-0a448b568b5d)
 
+> **LegCord Bypass** — fork of [Legcord](https://github.com/Legcord/Legcord) with a built-in **automatic DPI bypass** for Discord on Windows. Start the app, and if Discord is unreachable the built-in bypass machine tries zapret strategies one by one (with a live status animation on the splash screen) until a working one is found.
+
 # Features
+
+- **Built-in DPI bypass (Windows)**
+
+   When Discord cannot be reached, LegCord Bypass automatically downloads the [Flowseal zapret](https://github.com/flowseal/zapret-discord-youtube) engine, iterates Discord-only strategies with live probes, and keeps the working one running. Enable with `--bypass` or `"bypass": {"enabled": true}` in settings.
 
 - **Standalone client**
 

@@ -23,7 +23,7 @@ const availableActions = (Object.values(ValidActions) as ValidActions[])
 
 export const config: Configuration = {
     appId: "app.legcord.Legcord",
-    productName: "Legcord",
+    productName: "LegCord Bypass",
     // Biome treats electron-builder macro placeholders as template syntax.
     // biome-ignore lint/suspicious/noTemplateCurlyInString: electron-builder expands these placeholders.
     artifactName: "Legcord-${version}-${os}-${arch}.${ext}",
