@@ -68,7 +68,7 @@ export function getAppliedFlags(): AppliedFlagsOutput {
     };
 }
 
-import { startBypassForLaunch, stopBypass } from "./common/bypass/engine.js";
+import { isBypassEnabled, startBypassForLaunch, stopBypass } from "./common/bypass/engine.js";
 import { fetchMods } from "./discord/extensions/modloader.js";
 import { initializePluginSystem } from "./discord/plugins/manager.js";
 import { createWindow } from "./discord/window.js";
@@ -140,7 +140,7 @@ export async function init(): Promise<void> {
         }
         // DPI bypass machine: run BEFORE the Discord window starts loading so the
         // very first requests (web + voice) already flow through a working bypass.
-        if (process.platform === "win32" && getConfig("bypass")?.enabled) {
+        if (process.platform === "win32" && isBypassEnabled()) {
             await startBypassForLaunch();
         }
         createWindow();
@@ -382,7 +382,7 @@ if (!app.requestSingleInstanceLock() && getConfig("multiInstance") === false) {
         process.on("SIGINT", () => app.quit());
         process.on("SIGTERM", () => app.quit());
         app.on("before-quit", () => {
-            if (process.platform === "win32" && getConfig("bypass")?.enabled) {
+            if (process.platform === "win32" && isBypassEnabled()) {
                 void stopBypass();
             }
         });

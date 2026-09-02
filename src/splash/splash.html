@@ -385,10 +385,15 @@
                 return;
             }
 
+            setPct(5);
+            setStatus("Запуск…");
             text.innerHTML = await internal.getLang("loading_screen_start");
             if (!internal.isDev && !internal.isMicrosoftStore) {
+                setStatus("Проверка обновлений…");
+                const controller = new AbortController();
+                const timer = setTimeout(() => controller.abort(), 8000);
                 try {
-                    const response = await fetch("https://legcord.app/latest.json");
+                    const response = await fetch("https://legcord.app/latest.json", { signal: controller.signal });
                     const data = await response.json();
                     const remoteVersion = data.version.replace(/\./g, "");
                     if (remoteVersion > window.internal.version.replace(/\./g, "")) {
@@ -401,10 +406,14 @@
                     }
                 } catch (_e) {
                     console.warn("Update check failed; continuing startup.");
+                } finally {
+                    clearTimeout(timer);
                 }
             }
 
             while (check() === false) await sleep(10);
+            setPct(55);
+            setStatus("Готовим запуск…");
 
             const bypassTerminal = await waitForBypass();
             if (failed) return;

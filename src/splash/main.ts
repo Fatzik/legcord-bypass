@@ -1,7 +1,7 @@
 import path from "node:path";
 import { BrowserWindow, ipcMain } from "electron";
 import isDev from "electron-is-dev";
-import { getBypassSnapshot, onBypassUpdate } from "../common/bypass/engine.js";
+import { getBypassSnapshot, isBypassEnabled, onBypassUpdate } from "../common/bypass/engine.js";
 import { getConfig, isBackgroundStart } from "../common/config.js";
 import { getLang } from "../common/lang.js";
 import { getLaunchStatus, onLaunchStatus } from "../common/startupBus.js";
@@ -35,7 +35,7 @@ export async function createSplashWindow(): Promise<void> {
     });
     ipcMain.on("splash-bypass", (event) => {
         event.returnValue = {
-            enabled: getConfig("bypass")?.enabled === true,
+            enabled: isBypassEnabled(),
             snapshot: getBypassSnapshot(),
         };
     });

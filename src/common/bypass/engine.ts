@@ -39,6 +39,12 @@ export function getBypassSnapshot(): BypassSnapshot {
     return lastSnapshot;
 }
 
+/** The bypass is on by default in this fork; only an explicit "false" disables it. */
+export function isBypassEnabled(): boolean {
+    const settings = getConfig("bypass");
+    return settings === undefined || settings.enabled === true;
+}
+
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
 function orderedCandidates(): BypassStrategy[] {
@@ -112,8 +118,11 @@ export async function startBypassForLaunch(): Promise<BypassSnapshot> {
         emit(snapshot("disabled", ""));
         return lastSnapshot;
     }
-    const settings = getConfig("bypass");
-    if (!settings?.enabled) {
+    const rawSettings = getConfig("bypass");
+    // This fork is built around the bypass: it is ON unless explicitly disabled
+    // (settings.json `"bypass": { "enabled": false }` or the `--no-bypass` flag).
+    const settings = rawSettings === undefined ? { enabled: true, strategy: "", installed: false } : rawSettings;
+    if (!settings.enabled) {
         log("disabled in settings, skipping");
         emit(snapshot("disabled", ""));
         return lastSnapshot;
