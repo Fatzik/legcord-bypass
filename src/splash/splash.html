@@ -2,7 +2,7 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <title>Legcord</title>
+        <title>LegCord Bypass</title>
         <script>
             window.onbeforeunload = () => {
                 const style = document.createElement("style");
@@ -11,40 +11,12 @@
             };
         </script>
         <style>
-            /*MIT License
-
-            Copyright (c) 2022 GooseMod
-
-            Permission is hereby granted, free of charge, to any person obtaining a copy
-            of this software and associated documentation files (the "Software"), to deal
-            in the Software without restriction, including without limitation the rights
-            to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-            copies of the Software, and to permit persons to whom the Software is
-            furnished to do so, subject to the following conditions:
-
-            The above copyright notice and this permission notice shall be included in all
-            copies or substantial portions of the Software.
-
-            THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-            IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-            FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-            AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-            LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-            OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-            SOFTWARE.*/
             :root {
                 --background-primary: #282b30;
                 --background-secondary: rgba(255, 255, 255, 0.1);
                 --brand-experiment: #7289da;
                 --header-primary: #fff;
-                --text-muted: #72767d;
-            }
-
-            @font-face {
-                font-family: Whitney;
-                font-weight: 400;
-                font-style: normal;
-                src: url(https://legcord.app/whitney_400.woff) format("woff");
+                --text-muted: #99aab5;
             }
 
             html,
@@ -63,7 +35,7 @@
             }
 
             * {
-                font-family: "Whitney", sans-serif;
+                font-family: "Segoe UI", "Whitney", sans-serif;
                 box-sizing: border-box;
                 -webkit-user-select: none;
                 user-select: none;
@@ -93,12 +65,13 @@
                 flex-direction: column;
                 align-items: center;
                 gap: 6px;
-                margin-top: 14px;
+                margin-top: 16px;
                 width: 220px;
             }
 
             #launch-row.visible {
                 display: flex;
+                animation: fade-in 0.35s ease;
             }
 
             #bar-container,
@@ -121,30 +94,6 @@
                     background-color 0.3s ease;
             }
 
-            #launch-row.visible {
-                display: flex;
-                animation: fade-in 0.35s ease;
-            }
-
-            @keyframes fade-in {
-                from {
-                    opacity: 0;
-                }
-                to {
-                    opacity: 1;
-                }
-            }
-
-            #launch-status {
-                font-size: 12px;
-                text-align: center;
-                color: var(--text-muted);
-                line-height: 1.4;
-                white-space: pre-wrap;
-                min-height: 17px;
-                word-break: break-word;
-            }
-
             #launch-row.ok #bar-fill {
                 background-color: #3ba55d;
             }
@@ -157,14 +106,14 @@
                 animation: bar-pulse 1.6s ease-in-out infinite;
             }
 
-            @keyframes bar-pulse {
-                0%,
-                100% {
-                    opacity: 1;
-                }
-                50% {
-                    opacity: 0.45;
-                }
+            #launch-status {
+                font-size: 12px;
+                text-align: center;
+                color: var(--text-muted);
+                line-height: 1.4;
+                white-space: pre-wrap;
+                min-height: 17px;
+                word-break: break-word;
             }
 
             #actions {
@@ -182,118 +131,63 @@
             #actions button {
                 display: block;
                 width: 100%;
-            }
-
-            #debug {
-                position: absolute;
-                bottom: 6px;
-                right: 6px;
-                text-align: right;
-                font-size: 10px;
-                color: var(--text-muted);
-                white-space: pre;
-            }
-
-            #bypass {
-                display: none;
-                flex-direction: column;
-                align-items: center;
-                gap: 8px;
-                margin-top: 16px;
-                padding: 0 12px;
-            }
-
-            #bypass.visible {
-                display: flex;
-            }
-
-            #bypass-detail {
-                font-size: 12px;
-                text-align: center;
-                color: var(--text-muted);
-                line-height: 1.4;
-                min-height: 34px;
-            }
-
-            .spinner {
-                width: 26px;
-                height: 26px;
-                border-radius: 50%;
-                border: 3px solid var(--background-secondary);
-                border-top-color: var(--brand-experiment);
-                animation: spin 0.9s linear infinite;
-            }
-
-            #bypass.done .spinner {
-                animation: none;
-                border-top-color: #3ba55d;
-                transform: rotate(0deg);
-            }
-
-            #bypass.error .spinner {
-                animation: none;
-                border-top-color: #ed4245;
-                transform: rotate(0deg);
-            }
-
-            @keyframes spin {
-                to {
-                    transform: rotate(360deg);
-                }
-            }
-
-            img.logo {
-                width: 272px;
-            }
-
-            button {
                 background: var(--brand-experiment);
                 color: var(--header-primary);
                 outline: none;
                 border: none;
                 border-radius: 5px;
                 padding: 8px;
+                margin: 0;
                 -webkit-user-select: all;
                 user-select: all;
-                margin: 0 auto;
-                margin-top: 10px;
                 -webkit-app-region: no-drag;
-                transition: 0.17s ease;
-                display: none;
-            }
-            button:hover {
-                cursor: grab;
+                transition: opacity 0.17s ease;
             }
 
+            #actions button:hover {
+                cursor: pointer;
+                opacity: 0.85;
+            }
+
+            @keyframes fade-in {
+                from {
+                    opacity: 0;
+                }
+                to {
+                    opacity: 1;
+                }
+            }
+
+            @keyframes bar-pulse {
+                0%,
+                100% {
+                    opacity: 1;
+                }
+                50% {
+                    opacity: 0.45;
+                }
+            }
         </style>
     </head>
 
     <body>
-        <div class="container">
-            <!-- biome-ignore lint/a11y/useMediaCaption: silent logo animation, no audio -->
-            <video autoplay loop class="logo" id="splashscreen-legcord">
-                <source src="legcord://assets/Loading.webm" type="video/webm" />
-            </video>
-            <p id="text-splashscreen"></p>
-            <div id="bypass">
-                <div class="spinner"></div>
-                <p id="bypass-detail"></p>
-            </div>
-            <div id="launch-row">
-                <div id="bar-container"><div id="bar-fill"></div></div>
-                <p id="launch-status"></p>
-            </div>
-            <div id="actions">
-                <button id="retry" type="button">Retry</button>
-                <button id="ignore" type="button">Start anyway</button>
-            </div>
+        <!-- biome-ignore lint/a11y/useMediaCaption: silent logo animation, no audio -->
+        <video autoplay loop class="logo" id="splashscreen-legcord">
+            <source src="legcord://assets/Loading.webm" type="video/webm" />
+        </video>
+        <p id="text-splashscreen"></p>
+        <div id="launch-row">
+            <div id="bar-container"><div id="bar-fill"></div></div>
+            <p id="launch-status"></p>
+        </div>
+        <div id="actions">
+            <button id="retry" type="button">Retry</button>
+            <button id="ignore" type="button">Start anyway</button>
         </div>
     </body>
     <script>
         (async () => {
             const text = document.getElementById("text-splashscreen");
-            const bypassEl = document.getElementById("bypass");
-            const bypassDetail = document.getElementById("bypass-detail");
             const launchRow = document.getElementById("launch-row");
             const barFill = document.getElementById("bar-fill");
             const launchStatus = document.getElementById("launch-status");
@@ -317,8 +211,6 @@
                 launchStatus.textContent = msg ?? "";
             }
 
-            // Ambient progress: during long non-terminal phases the bar creeps
-            // forward a little so the user sees the app is alive and working.
             let ambientTimer = null;
             function startAmbient() {
                 stopAmbient();
@@ -350,43 +242,19 @@
                 actions.classList.add("visible");
             }
 
-            function bypassPct(snapshot) {
-                if (snapshot.stage === "checking") return 12;
-                if (snapshot.stage === "installing") return 30;
-                if (snapshot.stage === "testing") {
-                    const total = snapshot.total > 0 ? snapshot.total : 1;
-                    return 32 + Math.round((Math.min(snapshot.tried, total) / total) * 28);
+            function check() {
+                if (internal.installState === "installing") {
+                    text.innerHTML = "Installing mods";
+                } else if (internal.installState === "done") {
+                    return true;
+                } else if (internal.installState === "modDownload") {
+                    text.innerHTML = `Updating ${internal.mods}`;
+                } else if (internal.installState === "none") {
+                    text.innerHTML = "Nothing to install.";
+                    return true;
+                } else {
+                    return true;
                 }
-                return 0;
-            }
-
-            function renderBypass(snapshot) {
-                bypassEl.classList.remove("done", "error");
-                if (snapshot.stage === "active" || snapshot.stage === "direct") bypassEl.classList.add("done");
-                if (snapshot.stage === "error") bypassEl.classList.add("error");
-                bypassDetail.textContent = snapshot.detail || "";
-                const pct = bypassPct(snapshot);
-                if (pct > 0) setPct(pct);
-            }
-
-            function waitForBypass() {
-                return new Promise((resolve) => {
-                    if (!internal.bypass.enabled) return resolve(false);
-                    bypassEl.classList.add("visible");
-                    renderBypass(internal.bypass.snapshot);
-                    if (["active", "direct", "error"].includes(internal.bypass.snapshot.stage)) return resolve(true);
-                    const off = internal.onBypassStatus((snapshot) => {
-                        renderBypass(snapshot);
-                        if (["active", "direct", "error"].includes(snapshot.stage)) {
-                            off();
-                            resolve(true);
-                        }
-                    });
-                    setTimeout(() => {
-                        off();
-                        resolve(true);
-                    }, 30000);
-                });
             }
 
             function waitForLaunch() {
@@ -407,21 +275,6 @@
                 });
             }
 
-            function check() {
-                if (internal.installState === "installing") {
-                    text.innerHTML = "Installing mods";
-                } else if (internal.installState === "done") {
-                    return true;
-                } else if (internal.installState === "modDownload") {
-                    text.innerHTML = `Updating ${internal.mods}`;
-                } else if (internal.installState === "none") {
-                    text.innerHTML = "Nothing to install.";
-                    return true;
-                } else {
-                    return true;
-                }
-            }
-
             if (window.navigator.onLine === false) {
                 for (let i = 0; i < 5; i++) {
                     await sleep(1000);
@@ -436,8 +289,6 @@
             startAmbient();
             text.innerHTML = await internal.getLang("loading_screen_start");
 
-            // Run the (capped) update check and the bypass machine IN PARALLEL so
-            // neither blocks the other — startup is as fast as the slowest phase.
             const updateTask = (async () => {
                 if (internal.isDev || internal.isMicrosoftStore) return;
                 setStatus("Проверка обновлений…");
@@ -462,17 +313,10 @@
                 }
             })();
 
-            const bypassTask = waitForBypass();
-            await Promise.all([updateTask, bypassTask]);
+            await updateTask;
             if (failed) return;
 
             while (check() === false) await sleep(10);
-            setPct(55);
-            setStatus("Готовим запуск…");
-
-            if (internal.bypass.snapshot.stage === "error") {
-                setStatus(internal.bypass.snapshot.detail || "Обход не удался");
-            }
             setPct(70);
             setStatus("Загрузка Discord…");
 

@@ -1,7 +1,6 @@
 import path from "node:path";
 import { BrowserWindow, ipcMain } from "electron";
 import isDev from "electron-is-dev";
-import { getBypassSnapshot, isBypassEnabled, onBypassUpdate } from "../common/bypass/engine.js";
 import { getConfig, isBackgroundStart } from "../common/config.js";
 import { getLang } from "../common/lang.js";
 import { getLaunchStatus, onLaunchStatus } from "../common/startupBus.js";
@@ -33,19 +32,8 @@ export async function createSplashWindow(): Promise<void> {
     ipcMain.on("splash-clientmod", (event) => {
         event.returnValue = getConfig("mods");
     });
-    ipcMain.on("splash-bypass", (event) => {
-        event.returnValue = {
-            enabled: isBypassEnabled(),
-            snapshot: getBypassSnapshot(),
-        };
-    });
     ipcMain.on("splash-launch", (event) => {
         event.returnValue = getLaunchStatus();
-    });
-    onBypassUpdate((snapshot) => {
-        if (splashWindow && !splashWindow.isDestroyed()) {
-            splashWindow.webContents.send("bypass-status", snapshot);
-        }
     });
     onLaunchStatus((status) => {
         if (splashWindow && !splashWindow.isDestroyed()) {

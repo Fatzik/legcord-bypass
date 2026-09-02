@@ -4,7 +4,7 @@ import isDev from "electron-is-dev";
 import "./discord/extensions/csp.js";
 import "./protocol.js";
 import { readFileSync } from "node:fs";
-import type { BypassSettings, Settings } from "./@types/settings.js";
+import type { Settings } from "./@types/settings.js";
 import {
     checkForDataFolder,
     checkIfConfigExists,
@@ -20,7 +20,7 @@ import {
 import { getPreset } from "./common/flags.js";
 import { setLang } from "./common/lang.js";
 import { applyProxyCommandLineSwitches, applySessionProxy, configureNodeProxyEnv } from "./common/proxy.js";
-import { startProxySwitcher, stopProxySwitcher } from "./common/proxySwitcher.js";
+import { startProxyWatcher, stopProxyWatcher } from "./common/proxySwitcher.js";
 import { revealWindow } from "./common/windowVisibility.js";
 import { setupGlobalShortcuts, startDbusService } from "./dbus.js";
 
@@ -69,7 +69,6 @@ export function getAppliedFlags(): AppliedFlagsOutput {
     };
 }
 
-import { isBypassEnabled, startBypassForLaunch, stopBypass } from "./common/bypass/engine.js";
 import { fetchMods } from "./discord/extensions/modloader.js";
 import { initializePluginSystem } from "./discord/plugins/manager.js";
 import { createWindow } from "./discord/window.js";
@@ -85,29 +84,7 @@ app.on("render-process-gone", (_event, _webContents, details) => {
         app.relaunch();
     }
 });
-function setBypassEnabled(enabled: boolean): void {
-    const current = getConfig("bypass") as BypassSettings | undefined;
-    setConfig("bypass", {
-        enabled,
-        strategy: current?.strategy ?? "",
-        installed: current?.installed ?? false,
-    });
-}
-
 function args(): void {
-    // CLI switches for the DPI bypass machine (Windows).
-    if (process.argv.includes("--bypass")) {
-        if (getConfig("bypass")?.enabled !== true) {
-            console.log("Enabling the DPI bypass machine");
-            setBypassEnabled(true);
-        }
-    }
-    if (process.argv.includes("--no-bypass")) {
-        if (getConfig("bypass")?.enabled !== false) {
-            console.log("Disabling the DPI bypass machine");
-            setBypassEnabled(false);
-        }
-    }
     // check for bypass-setup flag
     if (process.argv.includes("--bypass-setup")) {
         console.log("Bypassing setup and generating default config...");
@@ -138,11 +115,6 @@ export async function init(): Promise<void> {
         // or when we intentionally start in the background.
         if (getConfig("skipSplash") === false && !isBackgroundStart()) {
             void createSplashWindow(); // NOTE - Awaiting will hang at start
-        }
-        // DPI bypass machine: run BEFORE the Discord window starts loading so the
-        // very first requests (web + voice) already flow through a working bypass.
-        if (process.platform === "win32" && isBypassEnabled()) {
-            await startBypassForLaunch();
         }
         createWindow();
     } else {
@@ -380,14 +352,11 @@ if (!app.requestSingleInstanceLock() && getConfig("multiInstance") === false) {
     void app.whenReady().then(async () => {
         if (isDev) console.log(JSON.stringify(getAppliedFlags()));
         await applySessionProxy();
-        startProxySwitcher();
+        startProxyWatcher();
         process.on("SIGINT", () => app.quit());
         process.on("SIGTERM", () => app.quit());
         app.on("before-quit", () => {
-            stopProxySwitcher();
-            if (process.platform === "win32" && isBypassEnabled()) {
-                void stopBypass();
-            }
+            stopProxyWatcher();
         });
         // Patch for linux bug to ensure things are loaded before window creation (fixes transparency on some linux systems)
         await new Promise<void>((resolve) =>

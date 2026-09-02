@@ -28,16 +28,6 @@ export interface AudioSettings {
 /** Chromium/Electron proxy modes — mirrors browser proxy settings. */
 export type ProxyMode = "system" | "direct" | "fixed_servers" | "pac_script" | "auto_detect";
 
-/** Built-in DPI bypass ("zapret"-engine) — Windows only. */
-export interface BypassSettings {
-    /** Master switch for the auto-bypass machine at startup. */
-    enabled: boolean;
-    /** Winning strategy id ("" while none is known). */
-    strategy: string;
-    /** Whether the elevated auto-start task was installed successfully. */
-    installed: boolean;
-}
-
 export interface Settings {
     // Referenced for detecting a broken config.
     "0"?: string;
@@ -110,7 +100,6 @@ export interface Settings {
     proxyCustomList?: string;
     noBundleUpdates: ValidMods[];
     automaticUpdates: boolean;
-    bypass?: BypassSettings;
     overlayButtonColor: string;
     processScanning: boolean;
     windowsLegacyScanning: boolean;

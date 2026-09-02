@@ -1,22 +1,9 @@
 import { contextBridge, type IpcRendererEvent, ipcRenderer } from "electron";
 
-export interface BypassIpcSnapshot {
-    stage: string;
-    detail: string;
-    strategy: string;
-    tried: number;
-    total: number;
-}
-
 export interface LaunchIpcStatus {
     state: string;
     detail: string;
 }
-
-const bypass = ipcRenderer.sendSync("splash-bypass") as {
-    enabled: boolean;
-    snapshot: BypassIpcSnapshot;
-};
 
 const launch = ipcRenderer.sendSync("splash-launch") as LaunchIpcStatus;
 
@@ -31,14 +18,6 @@ contextBridge.exposeInMainWorld("internal", {
             return result;
         }),
     splashEnd: () => ipcRenderer.send("splashEnd"),
-    bypass,
-    onBypassStatus: (callback: (snapshot: BypassIpcSnapshot) => void) => {
-        const handler = (_event: IpcRendererEvent, snapshot: BypassIpcSnapshot) => {
-            callback(snapshot);
-        };
-        ipcRenderer.on("bypass-status", handler);
-        return () => ipcRenderer.removeListener("bypass-status", handler);
-    },
     launch,
     onLaunchStatus: (callback: (status: LaunchIpcStatus) => void) => {
         const handler = (_event: IpcRendererEvent, status: LaunchIpcStatus) => {
