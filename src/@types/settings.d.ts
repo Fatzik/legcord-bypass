@@ -100,6 +100,14 @@ export interface Settings {
     proxyBypassRules: string;
     /** PAC script URL when proxyMode is `pac_script`. */
     proxyPacScript: string;
+    /** Auto proxy manager: pick the fastest proxy from the sources below. */
+    proxyAuto?: boolean;
+    /** Latency (ms) above which the auto manager switches to a faster proxy. */
+    proxyThreshold?: number;
+    /** HTTP(S) URLs of proxy lists, separated by commas/newlines. */
+    proxySources?: string;
+    /** User-provided proxies (scheme://host:port), comma or line separated. */
+    proxyCustomList?: string;
     noBundleUpdates: ValidMods[];
     automaticUpdates: boolean;
     bypass?: BypassSettings;

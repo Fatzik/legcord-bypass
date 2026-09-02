@@ -20,6 +20,7 @@ import {
 import { getPreset } from "./common/flags.js";
 import { setLang } from "./common/lang.js";
 import { applyProxyCommandLineSwitches, applySessionProxy, configureNodeProxyEnv } from "./common/proxy.js";
+import { startProxySwitcher, stopProxySwitcher } from "./common/proxySwitcher.js";
 import { revealWindow } from "./common/windowVisibility.js";
 import { setupGlobalShortcuts, startDbusService } from "./dbus.js";
 
@@ -379,9 +380,11 @@ if (!app.requestSingleInstanceLock() && getConfig("multiInstance") === false) {
     void app.whenReady().then(async () => {
         if (isDev) console.log(JSON.stringify(getAppliedFlags()));
         await applySessionProxy();
+        startProxySwitcher();
         process.on("SIGINT", () => app.quit());
         process.on("SIGTERM", () => app.quit());
         app.on("before-quit", () => {
+            stopProxySwitcher();
             if (process.platform === "win32" && isBypassEnabled()) {
                 void stopBypass();
             }

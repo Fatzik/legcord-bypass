@@ -698,6 +698,41 @@ export function SettingsPage() {
                         />
                     </SearchableSetting>
                 </Show>
+                <p style={{ fontSize: "16px", fontWeight: 600, margin: "14px 0 4px" }}>Настройка прокси</p>
+                <SearchableSetting keywords={["Настройка прокси", "proxy auto", "автопрокси", "автоподбор"]}>
+                    <SwitchItem
+                        title="Автоподбор прокси"
+                        note="При пинге выше порога автоматически ищется и применяется самый быстрый прокси из источников ниже."
+                        value={settings.proxyAuto ?? false}
+                        onChange={(v: boolean) => setConfig("proxyAuto", v, true)}
+                    />
+                </SearchableSetting>
+                <Show when={settings.proxyAuto === true}>
+                    <SearchableSetting keywords={["Настройка прокси", "порог", "пинг", "threshold"]}>
+                        <TextBoxItem
+                            title="Порог пинга (мс)"
+                            note="Прокси считается медленным, если его пинг выше этого значения (по умолчанию 100)."
+                            value={String(settings.proxyThreshold ?? 100)}
+                            onInput={(v: string) => setConfig("proxyThreshold", Number(v) || 100, true)}
+                        />
+                    </SearchableSetting>
+                    <SearchableSetting keywords={["Настройка прокси", "список", "источник", "proxy list"]}>
+                        <TextBoxItem
+                            title="Список прокси (источники)"
+                            note="HTTP(S)-адреса списков прокси через запятую. Строки вида http://хост:порт, socks5://хост:порт."
+                            value={settings.proxySources ?? ""}
+                            onInput={(v: string) => setConfig("proxySources", v, true)}
+                        />
+                    </SearchableSetting>
+                    <SearchableSetting keywords={["Настройка прокси", "свои", "пользовательские", "custom"]}>
+                        <TextBoxItem
+                            title="Свои прокси"
+                            note="Ваши прокси через запятую: http://хост:порт, socks5://хост:порт и т.п."
+                            value={settings.proxyCustomList ?? ""}
+                            onInput={(v: string) => setConfig("proxyCustomList", v, true)}
+                        />
+                    </SearchableSetting>
+                </Show>
             </SettingsPanel>
 
             <SettingsPanel
