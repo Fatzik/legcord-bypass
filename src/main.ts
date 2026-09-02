@@ -220,6 +220,18 @@ if (!app.requestSingleInstanceLock() && getConfig("multiInstance") === false) {
     app.commandLine.appendSwitch("enable-transparent-visuals");
     trackSwitch("enable-transparent-visuals");
     checkIfConfigIsBroken();
+    // Pick a working proxy BEFORE any GitHub-touching work (mod/plugin downloads,
+    // updater) and re-apply Node env so main-process fetches honor it too.
+    if (getConfig("proxyAuto") !== false) {
+        try {
+            const initial = await prepareInitialProxy();
+            if (initial === "none") {
+                console.error("[ProxyWatcher] No working proxy found before mod downloads — GitHub fetches may fail.");
+            }
+        } catch (error) {
+            console.error("[ProxyWatcher] Pre-download proxy preparation failed:", error);
+        }
+    }
     configureNodeProxyEnv();
     applyProxyCommandLineSwitches();
     const preset = getPreset();

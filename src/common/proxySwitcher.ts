@@ -1,7 +1,7 @@
 import { request } from "node:https";
 import { connect, type Socket } from "node:net";
 import { getConfig, setConfig } from "./config.js";
-import { applySessionProxy } from "./proxy.js";
+import { applySessionProxy, configureNodeProxyEnv } from "./proxy.js";
 
 interface Candidate {
     url: string;
@@ -247,22 +247,34 @@ async function buildPool(force = false): Promise<void> {
     log(`pool ready: ${state.pool.length} reachable proxies`);
 }
 
-/** Find a proxy that actually reaches Discord; returns its latency. */
-async function findWorkingProxy(excludeUrl: string | null): Promise<{ candidate: Candidate; ms: number } | null> {
-    const pool = state.pool.filter((candidate) => candidate.url !== excludeUrl);
-    for (let start = 0; start < pool.length && start < 25; start += 5) {
-        const batch = pool.slice(start, start + 5);
+/** Scan a candidate list in small batches; first batch with hits wins, best latency returned. */
+async function scanPool(
+    pool: Candidate[],
+    excludeUrl: string | null,
+    maxProbes: number,
+): Promise<{ candidate: Candidate; ms: number } | null> {
+    const list = pool.filter((candidate) => candidate.url !== excludeUrl);
+    for (let start = 0; start < list.length && start < maxProbes; start += 5) {
+        const batch = list.slice(start, start + 5);
         const results = await Promise.all(batch.map((candidate) => discordThroughProxy(candidate)));
         const hits = batch
             .map((candidate, index) => ({ candidate, ms: results[index] }))
             .filter((hit): hit is { candidate: Candidate; ms: number } => hit.ms !== null);
         if (hits.length > 0) {
             hits.sort((a, b) => a.ms - b.ms);
-            const best = hits[0];
-            return best ?? null;
+            return hits[0] ?? null;
         }
     }
     return null;
+}
+
+/** Find a proxy that actually reaches Discord. HTTP(S) proxies are CONNECT-verified first. */
+async function findWorkingProxy(excludeUrl: string | null): Promise<{ candidate: Candidate; ms: number } | null> {
+    const httpPool = state.pool.filter((candidate) => candidate.scheme === "http" || candidate.scheme === "https");
+    const verified = await scanPool(httpPool, excludeUrl, 25);
+    if (verified) return verified;
+    const socksPool = state.pool.filter((candidate) => candidate.scheme === "socks4" || candidate.scheme === "socks5");
+    return scanPool(socksPool, excludeUrl, 20);
 }
 
 async function applyProxy(candidate: Candidate): Promise<void> {
@@ -272,6 +284,9 @@ async function applyProxy(candidate: Candidate): Promise<void> {
     if (!(getConfig("proxyBypassRules") ?? "").trim()) setConfig("proxyBypassRules", "<local>");
     state.currentUrl = candidate.url;
     state.consecutiveFailures = 0;
+    // Chromium session + Node-side fetches (GitHub/mod downloads) both route
+    // through the new proxy, so switching is invisible to in-flight traffic.
+    configureNodeProxyEnv();
     await applySessionProxy();
 }
 
@@ -282,7 +297,9 @@ async function applyProxy(candidate: Candidate): Promise<void> {
  */
 export async function prepareInitialProxy(): Promise<"direct" | "proxy" | "none"> {
     if (getConfig("proxyAuto") === false) return "none";
-    if (state.currentUrl && (await discordThroughProxy(proxyFromUrl(state.currentUrl))) !== null) {
+    const cached = state.currentUrl ? proxyFromUrl(state.currentUrl) : null;
+    const canTrustCached = cached && (cached.scheme === "http" || cached.scheme === "https");
+    if (cached && canTrustCached && (await discordThroughProxy(cached)) !== null) {
         return "proxy";
     }
     if (await directDiscordReachable()) {
@@ -292,11 +309,13 @@ export async function prepareInitialProxy(): Promise<"direct" | "proxy" | "none"
     log("Discord is blocked; searching for a working proxy…");
     try {
         await buildPool(true);
-        const current = parseCurrentRules((getConfig("proxyRules") ?? "").trim());
-        if (current && (await discordThroughProxy(proxyFromUrl(current))) !== null) {
-            state.currentUrl = current;
+        const configuredUrl = parseCurrentRules((getConfig("proxyRules") ?? "").trim());
+        const existing = configuredUrl ? proxyFromUrl(configuredUrl) : null;
+        const trustExisting = existing && (existing.scheme === "http" || existing.scheme === "https");
+        if (trustExisting && existing && (await discordThroughProxy(existing)) !== null) {
+            state.currentUrl = existing.url;
             state.consecutiveFailures = 0;
-            log(`reusing configured proxy ${current}`);
+            log(`reusing configured proxy ${existing.url}`);
             return "proxy";
         }
         const found = await findWorkingProxy(null);
