@@ -117,8 +117,22 @@
                 background-color: var(--brand-experiment);
                 width: 0;
                 transition:
-                    width 0.3s ease,
+                    width 0.5s cubic-bezier(0.22, 1, 0.36, 1),
                     background-color 0.3s ease;
+            }
+
+            #launch-row.visible {
+                display: flex;
+                animation: fade-in 0.35s ease;
+            }
+
+            @keyframes fade-in {
+                from {
+                    opacity: 0;
+                }
+                to {
+                    opacity: 1;
+                }
             }
 
             #launch-status {
@@ -421,10 +435,14 @@
             setStatus("Запуск…");
             startAmbient();
             text.innerHTML = await internal.getLang("loading_screen_start");
-            if (!internal.isDev && !internal.isMicrosoftStore) {
+
+            // Run the (capped) update check and the bypass machine IN PARALLEL so
+            // neither blocks the other — startup is as fast as the slowest phase.
+            const updateTask = (async () => {
+                if (internal.isDev || internal.isMicrosoftStore) return;
                 setStatus("Проверка обновлений…");
                 const controller = new AbortController();
-                const timer = setTimeout(() => controller.abort(), 8000);
+                const timer = setTimeout(() => controller.abort(), 3000);
                 try {
                     const response = await fetch("https://legcord.app/latest.json", { signal: controller.signal });
                     const data = await response.json();
@@ -442,16 +460,17 @@
                 } finally {
                     clearTimeout(timer);
                 }
-            }
+            })();
+
+            const bypassTask = waitForBypass();
+            await Promise.all([updateTask, bypassTask]);
+            if (failed) return;
 
             while (check() === false) await sleep(10);
             setPct(55);
             setStatus("Готовим запуск…");
 
-            const bypassTerminal = await waitForBypass();
-            if (failed) return;
-
-            if (bypassTerminal && internal.bypass.snapshot.stage === "error") {
+            if (internal.bypass.snapshot.stage === "error") {
                 setStatus(internal.bypass.snapshot.detail || "Обход не удался");
             }
             setPct(70);
@@ -460,7 +479,7 @@
             const outcome = await waitForLaunch();
             if (outcome.state === "ok") {
                 markDone();
-                await sleep(900);
+                await sleep(700);
                 window.internal.splashEnd();
             } else {
                 markError("Discord не запустился", outcome.detail);

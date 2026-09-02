@@ -1,5 +1,5 @@
-import { existsSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { app } from "electron";
 import { getConfig, setConfig } from "../config.js";
 import { probeDiscord } from "./probe.js";
@@ -10,8 +10,28 @@ import type { LatestRelease } from "./zapretFiles.js";
 import { fetchLatestRelease } from "./zapretFiles.js";
 
 const runtimeRoot = (): string => join(process.env.PROGRAMDATA ?? "C:\\ProgramData", "Legcord", "zapret");
-const idFilePath = (): string => join(app.getPath("userData"), "zapret-bypass", "active.id");
-const localZipPath = (): string => join(app.getPath("userData"), "zapret-bypass", "bundle.zip");
+const bypassDir = (): string => join(app.getPath("userData"), "zapret-bypass");
+const idFilePath = (): string => join(bypassDir(), "active.id");
+const localZipPath = (): string => join(bypassDir(), "bundle.zip");
+const tagCachePath = (): string => join(bypassDir(), "last-tag.txt");
+
+function readTagCache(): string | null {
+    try {
+        const raw = readFileSync(tagCachePath(), "utf-8").trim();
+        return raw || null;
+    } catch {
+        return null;
+    }
+}
+
+function writeTagCache(tag: string): void {
+    try {
+        mkdirSync(dirname(tagCachePath()), { recursive: true });
+        writeFileSync(tagCachePath(), `${tag}\n`, "utf-8");
+    } catch {
+        // non-fatal
+    }
+}
 
 let lastSnapshot: BypassSnapshot = { stage: "disabled", detail: "", strategy: "", tried: 0, total: 0 };
 const listeners = new Set<BypassUpdate>();
@@ -119,15 +139,15 @@ async function tryStrategy(strategy: BypassStrategy, index: number, total: numbe
         logError(`could not start bypass task for strategy '${strategy.id}'`);
         return false;
     }
-    await sleep(1500);
-    return reachableWithRetries(2, 2000);
+    await sleep(1000);
+    return reachableWithRetries(1, 0);
 }
 
 async function alreadyRunningAndReachable(): Promise<boolean> {
     const running = (await task.isTaskRunning()) || (await task.isWinwsRunningUnder(runtimeRoot()));
     log(`existing bypass process: running=${running}`);
     if (!running) return false;
-    return reachableWithRetries(4, 1500);
+    return reachableWithRetries(2, 1000);
 }
 
 export async function startBypassForLaunch(): Promise<BypassSnapshot> {
@@ -173,9 +193,27 @@ export async function startBypassForLaunch(): Promise<BypassSnapshot> {
             release = { tag: "offline", url: "" };
             log("offline bundle detected, skipping GitHub release lookup");
         } else {
-            emit(snapshot("installing", "Проверяем актуальность движка…"));
-            release = await fetchLatestRelease();
-            log(`latest flowseal release: ${release.tag}`);
+            const cachedTag = readTagCache();
+            const alreadyCurrent =
+                cachedTag !== null &&
+                (await task.isTaskInstalled()) &&
+                task.isRuntimePresent(runtimeRoot()) &&
+                task.isRuntimeCurrent({
+                    runtimeDir: runtimeRoot(),
+                    idFilePath: idFilePath(),
+                    tag: cachedTag,
+                    url: "",
+                });
+            if (alreadyCurrent) {
+                // Fast path: the installed engine matches the cached tag, so the
+                // whole launch skips the GitHub API round-trip entirely.
+                release = { tag: cachedTag, url: "" };
+                log(`runtime already current (${cachedTag}), skipping release lookup`);
+            } else {
+                emit(snapshot("installing", "Проверяем актуальность движка…"));
+                release = await fetchLatestRelease();
+                log(`latest flowseal release: ${release.tag}`);
+            }
         }
         const setupError = await ensureSetup(release);
         if (setupError !== null) {
@@ -184,6 +222,7 @@ export async function startBypassForLaunch(): Promise<BypassSnapshot> {
             emit(snapshot("error", `Установка обхода не выполнена: ${setupError}`));
             return lastSnapshot;
         }
+        writeTagCache(release.tag);
 
         if (await alreadyRunningAndReachable()) {
             const saved = getConfig("bypass")?.strategy ?? "";
