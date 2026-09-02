@@ -40,7 +40,7 @@ jobs:
           key: electron-zips.windows-latest
 
       - name: Build Windows installer + zip
-        run: pnpm exec electron-builder --x64 -w nsis zip
+        run: pnpm exec electron-builder --x64 -w nsis zip --publish never
 
       - name: Save Electron cache
         uses: actions/cache/save@v5
