@@ -89,7 +89,24 @@ async function ensureSetup(release: LatestRelease): Promise<string | null> {
     }
     log("elevated setup required (task/version mismatch or missing runtime)");
     emit(snapshot("installing", "Настройка обхода…\nПодтвердите запрос администратора"));
-    const result = await task.applyElevatedSetup(options);
+    let setupFinished = false;
+    const applying = task.applyElevatedSetup(options);
+    const heartbeat = (async () => {
+        const messages = [
+            "Установка движка обхода…",
+            "Установка движка обхода…\nЭто может занять до минуты",
+            "Установка движка обхода…\n(сеть нестабильна, используем зеркала)",
+            "Установка движка обхода…\nПодтвердите запрос администратора при появлении",
+        ];
+        for (let i = 0; i < 30; i++) {
+            await sleep(4000);
+            if (setupFinished) return;
+            emit(snapshot("installing", messages[i % messages.length]));
+        }
+    })();
+    const result = await applying;
+    setupFinished = true;
+    void heartbeat;
     if (result !== null) logError(`elevated setup failed: ${result}`);
     return result;
 }

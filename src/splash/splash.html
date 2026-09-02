@@ -139,6 +139,20 @@
                 background-color: #ed4245;
             }
 
+            #launch-row.busy #bar-fill {
+                animation: bar-pulse 1.6s ease-in-out infinite;
+            }
+
+            @keyframes bar-pulse {
+                0%,
+                100% {
+                    opacity: 1;
+                }
+                50% {
+                    opacity: 0.45;
+                }
+            }
+
             #actions {
                 display: none;
                 flex-direction: column;
@@ -282,23 +296,41 @@
             function setPct(pct) {
                 launchRow.classList.remove("error");
                 barFill.style.width = `${Math.max(0, Math.min(100, pct))}%`;
-                launchRow.classList.add("visible");
+                launchRow.classList.add("visible", "busy");
             }
 
             function setStatus(msg) {
                 launchStatus.textContent = msg ?? "";
             }
 
+            // Ambient progress: during long non-terminal phases the bar creeps
+            // forward a little so the user sees the app is alive and working.
+            let ambientTimer = null;
+            function startAmbient() {
+                stopAmbient();
+                ambientTimer = setInterval(() => {
+                    if (launchRow.classList.contains("ok") || launchRow.classList.contains("error")) return;
+                    const current = parseFloat(barFill.style.width) || 0;
+                    if (current < 68) barFill.style.width = `${Math.min(68, current + 1)}%`;
+                }, 1000);
+            }
+            function stopAmbient() {
+                if (ambientTimer) clearInterval(ambientTimer);
+                ambientTimer = null;
+            }
+
             function markDone() {
-                launchRow.classList.remove("error");
+                stopAmbient();
+                launchRow.classList.remove("error", "busy");
                 launchRow.classList.add("ok", "visible");
                 barFill.style.width = "100%";
                 setStatus("Discord запущен");
             }
 
             function markError(title, detail) {
+                stopAmbient();
                 failed = true;
-                launchRow.classList.remove("ok");
+                launchRow.classList.remove("ok", "busy");
                 launchRow.classList.add("error", "visible");
                 setStatus(detail ? `${title}\n${detail}` : title);
                 actions.classList.add("visible");
@@ -387,6 +419,7 @@
 
             setPct(5);
             setStatus("Запуск…");
+            startAmbient();
             text.innerHTML = await internal.getLang("loading_screen_start");
             if (!internal.isDev && !internal.isMicrosoftStore) {
                 setStatus("Проверка обновлений…");

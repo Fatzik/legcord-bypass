@@ -10,8 +10,12 @@ interface GitHubRelease {
     assets: Array<{ name: string; browser_download_url: string }>;
 }
 
+async function fetchWithTimeout(url: string, timeoutMs: number, init: RequestInit = {}): Promise<Response> {
+    return fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
+}
+
 export async function fetchLatestRelease(): Promise<LatestRelease> {
-    const response = await fetch(RELEASE_API, {
+    const response = await fetchWithTimeout(RELEASE_API, 12000, {
         headers: { "user-agent": "legcord-bypass/1.0", accept: "application/vnd.github+json" },
     });
     if (!response.ok) {
