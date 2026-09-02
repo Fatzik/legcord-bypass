@@ -4,6 +4,7 @@ import isDev from "electron-is-dev";
 import { getBypassSnapshot, onBypassUpdate } from "../common/bypass/engine.js";
 import { getConfig, isBackgroundStart } from "../common/config.js";
 import { getLang } from "../common/lang.js";
+import { getLaunchStatus, onLaunchStatus } from "../common/startupBus.js";
 
 export let splashWindow: BrowserWindow;
 export async function createSplashWindow(): Promise<void> {
@@ -38,9 +39,17 @@ export async function createSplashWindow(): Promise<void> {
             snapshot: getBypassSnapshot(),
         };
     });
+    ipcMain.on("splash-launch", (event) => {
+        event.returnValue = getLaunchStatus();
+    });
     onBypassUpdate((snapshot) => {
         if (splashWindow && !splashWindow.isDestroyed()) {
             splashWindow.webContents.send("bypass-status", snapshot);
+        }
+    });
+    onLaunchStatus((status) => {
+        if (splashWindow && !splashWindow.isDestroyed()) {
+            splashWindow.webContents.send("launch-status", status);
         }
     });
     await splashWindow.loadURL("legcord://html/splash.html");

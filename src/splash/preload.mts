@@ -8,10 +8,17 @@ export interface BypassIpcSnapshot {
     total: number;
 }
 
+export interface LaunchIpcStatus {
+    state: string;
+    detail: string;
+}
+
 const bypass = ipcRenderer.sendSync("splash-bypass") as {
     enabled: boolean;
     snapshot: BypassIpcSnapshot;
 };
+
+const launch = ipcRenderer.sendSync("splash-launch") as LaunchIpcStatus;
 
 contextBridge.exposeInMainWorld("internal", {
     restart: () => ipcRenderer.send("restart"),
@@ -31,5 +38,13 @@ contextBridge.exposeInMainWorld("internal", {
         };
         ipcRenderer.on("bypass-status", handler);
         return () => ipcRenderer.removeListener("bypass-status", handler);
+    },
+    launch,
+    onLaunchStatus: (callback: (status: LaunchIpcStatus) => void) => {
+        const handler = (_event: IpcRendererEvent, status: LaunchIpcStatus) => {
+            callback(status);
+        };
+        ipcRenderer.on("launch-status", handler);
+        return () => ipcRenderer.removeListener("launch-status", handler);
     },
 });

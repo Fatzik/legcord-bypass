@@ -26,6 +26,7 @@ import {
     isTelemetryBlockedUrl,
     isYouTubeEmbedOrProxyFrame,
 } from "../common/sanitization.js";
+import { emitLaunchStatus } from "../common/startupBus.js";
 import { injectThemesMain } from "../common/themes.js";
 import {
     DEFAULT_WINDOW_HEIGHT,
@@ -580,5 +581,28 @@ export function createWindow() {
     mainWindow.setSize(storedBounds.width, storedBounds.height);
 
     mainWindows.push(mainWindow);
+
+    // Startup watchdog: tell the splash whether Discord actually loaded, so the
+    // user never stares at a black window after a failed/hung page load.
+    let launchReported = false;
+    const finishLaunch = (state: "ok" | "fail", detail = "") => {
+        if (launchReported) return;
+        launchReported = true;
+        clearTimeout(launchWatchdog);
+        emitLaunchStatus(state, detail);
+    };
+    const launchWatchdog = setTimeout(() => finishLaunch("fail", "Timed out while waiting for Discord to load"), 45000);
+    launchWatchdog.unref();
+    mainWindow.webContents.on("did-finish-load", () => finishLaunch("ok"));
+    mainWindow.webContents.on("did-fail-load", (_event, errorCode, errorDescription) =>
+        finishLaunch("fail", `${errorDescription} (${errorCode})`),
+    );
+    mainWindow.webContents.on("render-process-gone", (_event, details) =>
+        finishLaunch("fail", `Renderer process gone: ${details.reason}`),
+    );
+    mainWindow.on("closed", () => {
+        if (!launchReported) clearTimeout(launchWatchdog);
+    });
+
     doAfterDefiningTheWindow(mainWindow);
 }
