@@ -702,8 +702,8 @@ export function SettingsPage() {
                 <SearchableSetting keywords={["Настройка прокси", "proxy auto", "автопрокси", "автоподбор"]}>
                     <SwitchItem
                         title="Автоподбор прокси"
-                        note="При пинге выше порога автоматически ищется и применяется самый быстрый прокси из источников ниже."
-                        value={settings.proxyAuto ?? false}
+                        note="Включено по умолчанию: при запуске приложение само найдёт рабочий прокси. При пинге выше порога автоматически переключается на лучший."
+                        value={settings.proxyAuto ?? true}
                         onChange={(v: boolean) => setConfig("proxyAuto", v, true)}
                     />
                 </SearchableSetting>

@@ -20,7 +20,7 @@ import {
 import { getPreset } from "./common/flags.js";
 import { setLang } from "./common/lang.js";
 import { applyProxyCommandLineSwitches, applySessionProxy, configureNodeProxyEnv } from "./common/proxy.js";
-import { startProxyWatcher, stopProxyWatcher } from "./common/proxySwitcher.js";
+import { prepareInitialProxy, startProxyWatcher, stopProxyWatcher } from "./common/proxySwitcher.js";
 import { revealWindow } from "./common/windowVisibility.js";
 import { setupGlobalShortcuts, startDbusService } from "./dbus.js";
 
@@ -115,6 +115,18 @@ export async function init(): Promise<void> {
         // or when we intentionally start in the background.
         if (getConfig("skipSplash") === false && !isBackgroundStart()) {
             void createSplashWindow(); // NOTE - Awaiting will hang at start
+        }
+        // Guarantee a working proxy before Discord starts loading: pick a validated
+        // proxy from the (default) sources when Discord is not reachable directly.
+        if (getConfig("proxyAuto") !== false) {
+            try {
+                const initial = await prepareInitialProxy();
+                if (initial === "none") {
+                    console.error("[ProxyWatcher] No working proxy found at startup — Discord may fail to load.");
+                }
+            } catch (error) {
+                console.error("[ProxyWatcher] Initial proxy preparation failed:", error);
+            }
         }
         createWindow();
     } else {

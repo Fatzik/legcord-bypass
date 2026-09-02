@@ -74,7 +74,7 @@ const defaults: Settings = {
     proxyRules: "",
     proxyBypassRules: "<local>",
     proxyPacScript: "",
-    proxyAuto: false,
+    proxyAuto: true,
     proxyThreshold: 100,
     proxySources: "",
     proxyCustomList: "",
