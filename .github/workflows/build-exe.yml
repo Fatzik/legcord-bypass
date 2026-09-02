@@ -2,7 +2,7 @@ name: Build Windows EXE
 
 on:
   push:
-    branches: [dev, stable]
+    branches: [main, dev, stable]
     tags: ["v*"]
   pull_request:
   workflow_dispatch:
