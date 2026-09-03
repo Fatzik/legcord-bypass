@@ -1,7 +1,7 @@
 {
     "name": "legcord",
     "version": "1.3.2",
-    "description": "LegCord Bypass - a custom Discord client with a built-in automatic DPI bypass (zapret engine) for Windows.",
+    "description": "LegCord Bypass — кастомный Discord-клиент с автоматическим обходом DPI-блокировок через прокси для Windows.",
     "main": "ts-out/main.js",
     "engines": {
         "node": ">=26"
