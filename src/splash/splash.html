@@ -12,11 +12,14 @@
         </script>
         <style>
             :root {
-                --background-primary: #282b30;
-                --background-secondary: rgba(255, 255, 255, 0.1);
+                --background-primary: #0e1014;
+                --background-secondary: rgba(255, 255, 255, 0.08);
                 --brand-experiment: #7289da;
                 --header-primary: #fff;
-                --text-muted: #99aab5;
+                --text-muted: #8b93a1;
+                --brand-a: #7c92ff;
+                --brand-b: #eb459e;
+                --brand-c: #f9c835;
             }
 
             html,
@@ -27,11 +30,15 @@
                 padding: 0;
                 width: 100%;
                 height: 100%;
-                background: var(--background-primary);
+                background: radial-gradient(130% 90% at 50% -15%, #23272e 0%, #12141a 55%, #05070b 100%);
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
                 align-items: center;
+            }
+
+            body {
+                opacity: 1;
             }
 
             * {
@@ -44,18 +51,20 @@
 
             video {
                 display: block;
-                width: 200px;
-                height: 150px;
+                width: 168px;
+                height: 126px;
                 object-fit: cover;
                 margin: 0 auto;
+                border-radius: 12px;
+                box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
             }
 
             #text-splashscreen {
-                font-size: 16px;
+                min-height: 18px;
+                font-size: 12px;
                 text-align: center;
-                color: var(--header-primary);
-                font-weight: 400;
-                font-style: italic;
+                color: var(--text-muted);
+                letter-spacing: 1px;
                 text-transform: uppercase;
                 width: 100%;
             }
@@ -64,22 +73,38 @@
                 display: flex;
                 flex-direction: column;
                 align-items: center;
-                gap: 2px;
-                margin-bottom: 8px;
+                margin-bottom: 12px;
             }
 
-            #welcome .w1 {
-                font-size: 22px;
+            .wordmark {
+                font-size: 44px;
                 font-weight: 800;
-                color: var(--header-primary);
-                letter-spacing: 1px;
-                text-transform: uppercase;
+                line-height: 1.45;
+                letter-spacing: 6px;
+                white-space: nowrap;
+                padding: 0 0 6px;
+                color: transparent;
+                background: linear-gradient(90deg, var(--brand-a) 0%, var(--brand-b) 40%, var(--brand-c) 75%, var(--brand-a) 100%);
+                background-size: 220% 100%;
+                -webkit-background-clip: text;
+                background-clip: text;
+                filter: drop-shadow(0 2px 14px rgba(124, 146, 255, 0.4));
+                animation:
+                    word-in 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.35s both,
+                    bg-pan 6s linear 0.35s infinite;
             }
 
-            #welcome .w2 {
-                font-size: 13px;
-                font-weight: 600;
-                color: var(--brand-experiment);
+            @keyframes word-in {
+                from {
+                    opacity: 0;
+                    transform: translateY(18px);
+                    letter-spacing: 22px;
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                    letter-spacing: 6px;
+                }
             }
 
             #launch-row {
@@ -150,6 +175,19 @@
                 display: flex;
             }
 
+            #proxy-input {
+                width: 100%;
+                padding: 8px;
+                border-radius: 5px;
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                background: rgba(0, 0, 0, 0.3);
+                color: var(--header-primary);
+                font-size: 12px;
+                outline: none;
+                box-sizing: border-box;
+                -webkit-app-region: no-drag;
+            }
+
             #actions button {
                 display: block;
                 width: 100%;
@@ -172,30 +210,82 @@
             }
 
             #done-banner {
+                position: fixed;
+                inset: 0;
+                z-index: 20;
                 display: none;
-                margin-top: 14px;
-                padding: 0 12px;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+                padding: 24px;
                 text-align: center;
+                background: rgba(3, 5, 9, 0.86);
+                backdrop-filter: blur(4px);
+                pointer-events: none;
             }
 
             #done-banner.visible {
-                display: block;
-                animation: pop-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+                display: flex;
+                animation: banner-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+            }
+
+            #done-banner .done-icon {
+                width: 46px;
+                height: 46px;
+                border-radius: 50%;
+                background: linear-gradient(135deg, #43b581, #2d7d46);
+                box-shadow: 0 0 24px rgba(67, 181, 129, 0.45);
+                position: relative;
+                animation: icon-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+            }
+
+            #done-banner .done-icon::after {
+                content: "";
+                position: absolute;
+                left: 13px;
+                top: 12px;
+                width: 15px;
+                height: 8px;
+                border-left: 3px solid #fff;
+                border-bottom: 3px solid #fff;
+                transform: rotate(-45deg);
             }
 
             #done-banner .b1 {
-                font-size: 20px;
+                font-size: 22px;
                 font-weight: 700;
                 color: var(--header-primary);
                 text-transform: uppercase;
-                letter-spacing: 0.5px;
+                letter-spacing: 1px;
+                white-space: nowrap;
             }
 
             #done-banner .b2 {
-                font-size: 12px;
-                color: #3ba55d;
-                margin-top: 5px;
+                font-size: 13px;
+                color: #43b581;
+                margin-top: 2px;
                 font-weight: 600;
+            }
+
+            @keyframes banner-in {
+                from {
+                    opacity: 0;
+                }
+                to {
+                    opacity: 1;
+                }
+            }
+
+            @keyframes icon-pop {
+                from {
+                    opacity: 0;
+                    transform: scale(0.4);
+                }
+                to {
+                    opacity: 1;
+                    transform: scale(1);
+                }
             }
 
             @keyframes pop-in {
@@ -227,17 +317,89 @@
                     opacity: 0.45;
                 }
             }
+
+            /* ---------- Entrance intro (always completes well under 5 s) ---------- */
+            #curtain {
+                position: fixed;
+                inset: 0;
+                z-index: 5;
+                background: #04060b;
+                opacity: 0;
+                pointer-events: none;
+            }
+
+            @keyframes rise-in {
+                from {
+                    opacity: 0;
+                    transform: translateY(14px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            @keyframes letter-in {
+                from {
+                    opacity: 0;
+                    transform: translateY(22px) scale(0.7);
+                    filter: blur(6px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0) scale(1);
+                    filter: blur(0);
+                }
+            }
+
+            @keyframes bg-pan {
+                from {
+                    background-position: 0% 50%;
+                }
+                to {
+                    background-position: 220% 50%;
+                }
+            }
+
+            @keyframes curtain-out {
+                from {
+                    opacity: 1;
+                }
+                to {
+                    opacity: 0;
+                }
+            }
+
+            /* Entrance intro — always runs; fully settled well under 5 s. */
+            #curtain {
+                opacity: 1;
+                animation: curtain-out 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            }
+
+            video {
+                opacity: 0;
+                animation: rise-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.1s forwards;
+            }
+
+            #text-splashscreen {
+                opacity: 0;
+                animation: rise-in 0.5s ease-out 1.45s forwards;
+            }
+
+            #launch-row.visible {
+                animation: fade-in 0.45s ease-out 1.6s both;
+            }
         </style>
     </head>
 
     <body>
+        <div id="curtain"></div>
         <!-- biome-ignore lint/a11y/useMediaCaption: silent logo animation, no audio -->
-        <video autoplay loop class="logo" id="splashscreen-legcord">
+        <video autoplay loop muted class="logo" id="splashscreen-legcord">
             <source src="legcord://assets/Loading.webm" type="video/webm" />
         </video>
         <div id="welcome">
-            <span class="w1">LegCord</span>
-            <span class="w2">by FATZE</span>
+            <div class="wordmark" aria-label="LegFork">LegFork</div>
         </div>
         <p id="text-splashscreen"></p>
         <div id="launch-row">
@@ -245,10 +407,13 @@
             <p id="launch-status"></p>
         </div>
         <div id="actions">
+            <input id="proxy-input" type="text" placeholder="Новый прокси: host:port / socks5://…" />
+            <button id="apply-proxy" type="button">Принять прокси</button>
             <button id="retry" type="button">Retry</button>
             <button id="ignore" type="button">Start anyway</button>
         </div>
         <div id="done-banner">
+            <div class="done-icon"></div>
             <div class="b1">РКН был отъебан</div>
             <div class="b2">by @NNSQUADO</div>
         </div>
@@ -262,12 +427,32 @@
             const actions = document.getElementById("actions");
             const retryBtn = document.getElementById("retry");
             const ignoreBtn = document.getElementById("ignore");
+            const proxyInput = document.getElementById("proxy-input");
+            const applyProxyBtn = document.getElementById("apply-proxy");
 
             const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
             let failed = false;
 
             retryBtn.addEventListener("click", () => window.internal.restart());
             ignoreBtn.addEventListener("click", () => window.internal.splashEnd());
+            applyProxyBtn.addEventListener("click", async () => {
+                const raw = (proxyInput.value || "").trim();
+                if (!raw) {
+                    setStatus("Введите прокси, например 72.56.38.111:10916");
+                    return;
+                }
+                setStatus("Проверяем прокси и подключение к Discord…");
+                const result = await window.internal
+                    .acceptProxy(raw)
+                    .catch(() => ({ ok: false, url: "", ms: 0, error: "Ошибка IPC" }));
+                if (result.ok) {
+                    setStatus(`Прокси принят: ${result.url} (${result.ms} мс). Перезапуск…`);
+                    await sleep(800);
+                    window.internal.restart();
+                } else {
+                    setStatus(`Отклонено: ${result.error ?? "прокси не отвечает"}`);
+                }
+            });
 
             function setPct(pct) {
                 launchRow.classList.remove("error");
@@ -310,35 +495,34 @@
                 actions.classList.add("visible");
             }
 
-            function check() {
-                if (internal.installState === "installing") {
-                    text.innerHTML = "Installing mods";
-                } else if (internal.installState === "done") {
-                    return true;
-                } else if (internal.installState === "modDownload") {
-                    text.innerHTML = `Updating ${internal.mods}`;
-                } else if (internal.installState === "none") {
-                    text.innerHTML = "Nothing to install.";
-                    return true;
-                } else {
-                    return true;
-                }
-            }
-
             function waitForLaunch() {
                 return new Promise((resolve) => {
-                    const initial = internal.launch;
-                    if (initial.state === "ok") return resolve(initial);
-                    if (initial.state === "fail") return resolve(initial);
-                    const off = internal.onLaunchStatus((status) => {
-                        if (status.state === "ok" || status.state === "fail") {
-                            off();
-                            resolve(status);
-                        }
-                    });
-                    setTimeout(() => {
+                    let resolved = false;
+                    const done = (value) => {
+                        if (resolved) return;
+                        resolved = true;
+                        clearInterval(pollTimer);
+                        clearTimeout(timeoutTimer);
                         off();
-                        resolve({ state: "fail", detail: "Timed out while waiting for Discord" });
+                        resolve(value);
+                    };
+                    const off = internal.onLaunchStatus((status) => {
+                        if (status.state === "ok" || status.state === "fail") done(status);
+                    });
+                    // Poll the CURRENT status fresh from main every 1.5s — this
+                    // catches the case where Discord loaded before we subscribed.
+                    const pollTimer = setInterval(() => {
+                        try {
+                            const current = internal.getLaunchStatus();
+                            if (current.state === "ok" || current.state === "fail") done(current);
+                        } catch (_e) {
+                            // IPC not ready yet — keep polling
+                        }
+                    }, 1500);
+                    // Startup can legally take long: up to 14s proxy search +
+                    // 20s window watchdog. 60s is only a safety net.
+                    const timeoutTimer = setTimeout(() => {
+                        done({ state: "fail", detail: "Timed out while waiting for Discord" });
                     }, 60000);
                 });
             }
@@ -355,49 +539,73 @@
             setPct(5);
             setStatus("Запуск…");
             startAmbient();
-            text.innerHTML = await internal.getLang("loading_screen_start");
-
-            const updateTask = (async () => {
-                if (internal.isDev || internal.isMicrosoftStore) return;
-                setStatus("Проверка обновлений…");
-                const controller = new AbortController();
-                const timer = setTimeout(() => controller.abort(), 3000);
-                try {
-                    const response = await fetch("https://legcord.app/latest.json", { signal: controller.signal });
-                    const data = await response.json();
-                    const remoteVersion = data.version.replace(/\./g, "");
-                    if (remoteVersion > window.internal.version.replace(/\./g, "")) {
-                        const elem = document.createElement("img");
-                        elem.classList.add("logo");
-                        elem.src = "legcord://assets/Update.webp";
-                        document.body.prepend(elem);
-                        document.getElementById("splashscreen-legcord").remove();
-                        text.innerHTML = await internal.getLang("loading_screen_update");
-                    }
-                } catch (_e) {
-                    console.warn("Update check failed; continuing startup.");
-                } finally {
-                    clearTimeout(timer);
+            // Absolute safety net: no matter what happens (missed events, slow
+            // checks, hung mod install), the splash never stays up longer than 45 s.
+            // Covers the 14 s proxy budget + 20 s window watchdog + retries.
+            let splashClosed = false;
+            const closeSplash = () => {
+                if (splashClosed) return;
+                splashClosed = true;
+                window.internal.splashEnd();
+            };
+            setTimeout(() => {
+                const isTerminal = launchRow.classList.contains("ok") || launchRow.classList.contains("error");
+                if (!isTerminal) closeSplash();
+            }, 45000);
+            // Local fallback status rotator: guarantees visible labels ("Ищем
+            // прокси…", "Подключаемся…", "Загрузка Discord…") even if live proxy
+            // phase events arrive late or get lost.
+            const fallbackPhases = ["Ищем прокси…", "Проверяем прокси…", "Подключаемся…", "Загрузка Discord…"];
+            let fallbackIdx = 0;
+            const fallbackTimer = setInterval(() => {
+                if (launchRow.classList.contains("ok") || launchRow.classList.contains("error")) {
+                    clearInterval(fallbackTimer);
+                    return;
                 }
-            })();
+                fallbackIdx = (fallbackIdx + 1) % fallbackPhases.length;
+                const next = fallbackPhases[fallbackIdx];
+                if (next === "Загрузка Discord…") setStatus(next);
+                // For proxy phases, only overwrite if the current status looks stale/generic.
+                const current = launchStatus.textContent || "";
+                if (current === "" || current === "Запуск…" || current.startsWith("Ищем") || current.startsWith("Проверяем") || current.startsWith("Подключаемся")) {
+                    setStatus(next);
+                }
+            }, 2500);
 
-            await updateTask;
-            if (failed) return;
+            // Live proxy phases ("Ищем прокси…", "Проверяем…", "Подключаемся…")
+            // are shown on the status line until a terminal launch state appears.
+            internal.onProxyPhase((text) => {
+                if (!launchRow.classList.contains("ok") && !launchRow.classList.contains("error")) {
+                    setStatus(text);
+                }
+            });
 
-            while (check() === false) await sleep(10);
+            text.innerHTML = await Promise.race([
+                internal.getLang("loading_screen_start").catch(() => "Starting…"),
+                sleep(3000).then(() => "Starting…"),
+            ]);
+
+            // No update check and no waiting for mod installs here — every second
+            // counts. Version notifications happen in main (once per 6h), mods
+            // finish in the background.
             setPct(70);
             setStatus("Загрузка Discord…");
 
-            const outcome = await waitForLaunch();
-            if (outcome.state === "ok") {
-                markDone();
-                const banner = document.getElementById("done-banner");
-                if (banner) banner.classList.add("visible");
-                setStatus("");
-                await sleep(2600);
-                window.internal.splashEnd();
-            } else {
-                markError("Discord не запустился", outcome.detail);
+            try {
+                const outcome = await waitForLaunch();
+                if (outcome.state === "ok") {
+                    markDone();
+                    const banner = document.getElementById("done-banner");
+                    if (banner) banner.classList.add("visible");
+                    setStatus("");
+                    await sleep(2600);
+                    closeSplash();
+                } else {
+                    markError("Discord не запустился", outcome.detail);
+                }
+            } catch (e) {
+                console.error("splash flow error:", e);
+                markError("Discord не запустился", String(e));
             }
         })();
     </script>

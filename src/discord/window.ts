@@ -19,6 +19,7 @@ import { navigateTo } from "../common/dom.js";
 import { forceQuit, setForceQuit } from "../common/forceQuit.js";
 import { handleCommands, passedValidArgument } from "../common/handleCommands.js";
 import { getLang } from "../common/lang.js";
+import { forceProxySwitch } from "../common/proxySwitcher.js";
 import {
     isBlockedLocalhostWebSocket,
     isDiscordIcsBlobUrl,
@@ -585,24 +586,248 @@ export function createWindow() {
     // Startup watchdog: tell the splash whether Discord actually loaded, so the
     // user never stares at a black window after a failed/hung page load.
     let launchReported = false;
+    let didRetryLoad = false;
+    let launchRecoveryUsed = false;
+    let okTimer: NodeJS.Timeout | null = null;
     const finishLaunch = (state: "ok" | "fail", detail = "") => {
         if (launchReported) return;
         launchReported = true;
+        if (okTimer) clearTimeout(okTimer);
         clearTimeout(launchWatchdog);
         emitLaunchStatus(state, detail);
     };
-    const launchWatchdog = setTimeout(() => finishLaunch("fail", "Timed out while waiting for Discord to load"), 45000);
+    const launchWatchdog = setTimeout(() => finishLaunch("fail", "Timed out while waiting for Discord to load"), 35000);
     launchWatchdog.unref();
-    mainWindow.webContents.on("did-finish-load", () => finishLaunch("ok"));
-    mainWindow.webContents.on("did-fail-load", (_event, errorCode, errorDescription) =>
-        finishLaunch("fail", `${errorDescription} (${errorCode})`),
-    );
+
+    mainWindow.webContents.on("did-finish-load", () => {
+        // LOCAL anti-placebo check (no network): wait until Discord actually paints
+        // real content (channels/guilds/chat). Loading through a slow/DPI'd proxy can
+        // legitimately take a while, so be patient (up to ~25 s per committed document)
+        // and only declare a "placebo" shell after one automatic proxy recovery round.
+        if (launchReported) return;
+        if (okTimer) clearTimeout(okTimer);
+        okTimer = setTimeout(() => {
+            void (async () => {
+                if (launchReported || mainWindow.isDestroyed()) return;
+                const contentProbe = `(() => {
+                    const b = document.body;
+                    if (!b) return false;
+                    const title = (document.title || "").toLowerCase();
+                    const text = (b.innerText || "").trim();
+                    const structural =
+                        b.querySelector('[class*=channels], [class*=sidebar], [class*=guilds], [class*=chat], [class*=messages]') !== null ||
+                        b.querySelectorAll('img[src*="cdn.discord"], img[src*=discord]').length >= 3;
+                    return title.includes("discord") && (structural || text.length > 250);
+                })()`;
+                const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+                const deadlineMs = launchRecoveryUsed ? 12000 : 25000;
+                let probedFor = 0;
+                while (!launchReported && !mainWindow.isDestroyed() && probedFor < deadlineMs) {
+                    const hasContent = await mainWindow.webContents.executeJavaScript(contentProbe).catch(() => false);
+                    if (hasContent === true) {
+                        finishLaunch("ok");
+                        return;
+                    }
+                    await wait(1500);
+                    probedFor += 1500;
+                }
+                if (launchReported || mainWindow.isDestroyed()) return;
+                // Discord shell loaded but stayed EMPTY for a long time. Before asking
+                // the user for a new proxy, try ONE automatic route recovery round.
+                if (launchRecoveryUsed) {
+                    finishLaunch("fail", "Discord пустой (ничего не грузится) — введите новый прокси ниже");
+                    return;
+                }
+                launchRecoveryUsed = true;
+                await forceProxySwitch("Discord loaded but stayed empty").catch(() => false);
+                if (!launchReported && !mainWindow.isDestroyed()) {
+                    mainWindow.webContents.reload();
+                }
+            })();
+        }, 500);
+    });
+    mainWindow.webContents.on("did-fail-load", (_event, errorCode, errorDescription) => {
+        if (launchReported) return;
+        // -3 = navigation aborted (usually our own proxy switch / reload) — never a real failure.
+        if (errorCode === -3) return;
+        if (!didRetryLoad && getConfig("proxyAuto") !== false) {
+            // A proxy swap can abort the first attempt; retry once before giving up.
+            didRetryLoad = true;
+            setTimeout(() => {
+                if (!launchReported && !mainWindow.isDestroyed()) {
+                    mainWindow.webContents.reload();
+                }
+            }, 1200);
+            return;
+        }
+        if (!launchRecoveryUsed && getConfig("proxyAuto") !== false) {
+            // Second real load failure — find a better route and reload once.
+            launchRecoveryUsed = true;
+            void (async () => {
+                await forceProxySwitch(`Discord failed to load (${errorCode})`).catch(() => false);
+                if (!launchReported && !mainWindow.isDestroyed()) {
+                    mainWindow.webContents.reload();
+                }
+            })();
+            return;
+        }
+        finishLaunch("fail", `${errorDescription} (${errorCode})`);
+    });
     mainWindow.webContents.on("render-process-gone", (_event, details) =>
         finishLaunch("fail", `Renderer process gone: ${details.reason}`),
     );
     mainWindow.on("closed", () => {
-        if (!launchReported) clearTimeout(launchWatchdog);
+        if (!launchReported) {
+            if (okTimer) clearTimeout(okTimer);
+            clearTimeout(launchWatchdog);
+        }
     });
 
+    // Health watchdog: watches the Discord UI for lost connections (reconnecting,
+    // voice stuck on "Connecting", offline states) AND probes Discord's API from
+    // main. On trouble it switches proxy, clicks "Reconnect", and reloads as a
+    // last resort — Discord keeps working even if a route dies.
+    const HEALTH_POLL_MS = 4000;
+    const NET_PROBE_MS = 30000;
+    let uiStreak = 0;
+    let fixPending = false;
+    let reloadedForHealth = false;
+
+    const uiProbeScript = `(() => {
+        if (!document.body) return { stuck: false, msgFail: false, hasReconnect: false };
+        const text = (document.body.innerText || "").toLowerCase();
+        const markers = [
+            "подключение", "connecting", "rtc connecting", "reconnecting",
+            "переподключение", "reconnect", "no route", "rtc disconnected",
+            "не удаётся подключиться", "нет интернета", "no internet",
+            "вы не в сети", "you are offline", "соединение с сервером потеряно",
+            "trying to reconnect", "проблемы с подключением", "having trouble connecting",
+            "сообщите нам", "let us know",
+        ];
+        const loadMarkers = [
+            "не удалось загрузить сообщения", "failed to load messages",
+            "не удалось загрузить канал", "failed to load channel",
+            "сообщения не загрузились", "messages failed to load",
+            "ошибка загрузки сообщений",
+        ];
+        const mediaMarkers = [
+            "не удалось загрузить изображение", "failed to load image",
+            "не удалось загрузить картинку", "картинка не загрузилась",
+            "изображение не загрузилось", "не удалось загрузить файл",
+            "failed to load file", "не удалось загрузить вложение", "failed to load attachment",
+            "не удалось загрузить видео", "failed to load video",
+            "не удалось воспроизвести", "failed to play",
+            "не удалось загрузить превью", "failed to load preview",
+            "не удалось загрузить", "couldn't load", "не удалось отобразить",
+            "failed to load", "ошибка загрузки", "ошибка при загрузке",
+            "не удалось подключиться", "failed to connect", "недоступно",
+            "unavailable", "ошибка",
+        ];
+        const stuck = markers.some((m) => text.includes(m));
+        const msgFail = loadMarkers.some((m) => text.includes(m));
+        const mediaFail = mediaMarkers.some((m) => text.includes(m));
+        const reconnect = Array.from(document.querySelectorAll("button,[role=button]")).find((el) => {
+            const t = (el.textContent || "").trim().toLowerCase();
+            return t === "reconnect" || t === "переподключиться" || t === "повторить" || t === "try again" || t === "retry";
+        });
+        return { stuck, msgFail, mediaFail, hasReconnect: !!reconnect };
+    })()`;
+    const clickReconnectScript = `(() => {
+        const b = Array.from(document.querySelectorAll("button,[role=button]")).find((el) => {
+            const t = (el.textContent || "").trim().toLowerCase();
+            return t === "reconnect" || t === "переподключиться" || t === "повторить" || t === "try again" || t === "retry";
+        });
+        if (b) { b.click(); return true; }
+        return false;
+    })()`;
+
+    const pollUiHealth = async (): Promise<void> => {
+        try {
+            if (getConfig("voiceAutoProxyFix") === false || getConfig("proxyAuto") === false) {
+                uiStreak = 0;
+                return;
+            }
+            const result = (await mainWindow.webContents.executeJavaScript(uiProbeScript)) as {
+                stuck: boolean;
+                msgFail: boolean;
+                mediaFail: boolean;
+                hasReconnect: boolean;
+            };
+            const bad =
+                result?.stuck === true ||
+                result?.msgFail === true ||
+                result?.mediaFail === true ||
+                result?.hasReconnect === true;
+            uiStreak = bad ? uiStreak + 1 : 0;
+            // Hard content-load failures (messages/media/images/voice) trigger FAST —
+            // after 1 poll (~4 s). Generic connectivity waits a little (~8-12 s).
+            const hardFail = result?.msgFail === true || result?.mediaFail === true;
+            const requiredStreak = hardFail ? 1 : result?.hasReconnect === true ? 2 : 3;
+            if (uiStreak < requiredStreak || fixPending) return;
+            uiStreak = 0;
+            fixPending = true;
+            const reason =
+                result?.msgFail === true
+                    ? "messages failed to load"
+                    : result?.mediaFail === true
+                      ? "media/images/voice failed to load"
+                      : "discord connection lost";
+            const switched = await forceProxySwitch(reason);
+            if (switched && !mainWindow.isDestroyed()) {
+                const clicked = await mainWindow.webContents.executeJavaScript(clickReconnectScript).catch(() => false);
+                if (!clicked && !reloadedForHealth) {
+                    reloadedForHealth = true;
+                    logHealthReload();
+                    mainWindow.webContents.reload();
+                }
+            } else if (!switched && !reloadedForHealth) {
+                reloadedForHealth = true;
+                logHealthReload();
+                mainWindow.webContents.reload();
+            }
+            setTimeout(() => {
+                fixPending = false;
+                reloadedForHealth = false;
+            }, 30000);
+        } catch {
+            uiStreak = 0;
+        }
+    };
+
+    let netFailStreak = 0;
+    const pollNetworkHealth = async (): Promise<void> => {
+        if (getConfig("proxyAuto") === false) return;
+        try {
+            const ok = (await mainWindow.webContents.executeJavaScript(
+                `(async () => { try { const r = await fetch("/api/v9/gateway", { credentials: "omit", cache: "no-store" }); return r.ok; } catch { return false; } })()`,
+            )) as boolean;
+            if (ok) {
+                netFailStreak = 0;
+                return;
+            }
+            netFailStreak++;
+            if (netFailStreak >= 3) {
+                netFailStreak = 0;
+                await forceProxySwitch("network probe: Discord unreachable");
+            }
+        } catch {
+            netFailStreak = 0;
+        }
+    };
+
+    const uiHealthTimer = setInterval(() => void pollUiHealth(), HEALTH_POLL_MS);
+    const netHealthTimer = setInterval(() => void pollNetworkHealth(), NET_PROBE_MS);
+    uiHealthTimer.unref();
+    netHealthTimer.unref();
+    const clearHealthTimers = () => {
+        clearInterval(uiHealthTimer);
+        clearInterval(netHealthTimer);
+    };
+    mainWindow.on("closed", clearHealthTimers);
+
     doAfterDefiningTheWindow(mainWindow);
+}
+
+function logHealthReload(): void {
+    console.log("[HealthWatcher] Reloading Discord window after proxy fix attempt");
 }

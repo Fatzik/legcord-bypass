@@ -45,6 +45,13 @@ contextBridge.exposeInMainWorld("legcord", {
         addKeybind: (keybind: Keybind) => ipcRenderer.send("addKeybind", keybind),
         toggleKeybind: (id: string) => ipcRenderer.send("toggleKeybind", id),
         removeKeybind: (id: string) => ipcRenderer.send("removeKeybind", id),
+        acceptProxy: (value: string) =>
+            ipcRenderer.invoke("acceptProxy", value) as Promise<{
+                ok: boolean;
+                url: string;
+                ms: number;
+                error?: string;
+            }>,
         openStorageFolder: () => ipcRenderer.send("openStorageFolder"),
         setLang: (lang: string) => ipcRenderer.send("setLang", lang),
         openThemesFolder: () => ipcRenderer.send("openThemesFolder"),

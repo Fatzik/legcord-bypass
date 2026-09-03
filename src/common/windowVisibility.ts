@@ -1,12 +1,50 @@
 import type { BrowserWindow } from "electron";
 import { getConfig, getStartMinimizedMode } from "./config.js";
 
+function opacitySupported(): boolean {
+    return process.platform === "win32" || process.platform === "darwin";
+}
+
+/**
+ * Smoothly fade a window in (used for the splash and for the first reveal of
+ * the Discord window). Falls back to an instant show where opacity is unsupported.
+ */
+export function fadeInWindow(win: BrowserWindow, durationMs = 500): void {
+    if (win.isDestroyed()) return;
+    if (!opacitySupported()) {
+        win.show();
+        return;
+    }
+    try {
+        win.setOpacity(0);
+    } catch {
+        win.show();
+        return;
+    }
+    if (!win.isVisible()) win.show();
+    const started = Date.now();
+    const timer = setInterval(() => {
+        if (win.isDestroyed()) {
+            clearInterval(timer);
+            return;
+        }
+        const progress = Math.min(1, (Date.now() - started) / durationMs);
+        try {
+            win.setOpacity(progress);
+        } catch {
+            clearInterval(timer);
+            return;
+        }
+        if (progress >= 1) clearInterval(timer);
+    }, 16);
+}
+
 /** Show the main window and restore taskbar/dock presence after a tray-only start. */
 export function revealWindow(win: BrowserWindow): void {
     if (win.isDestroyed()) return;
     win.setSkipTaskbar(false);
     if (win.isMinimized()) win.restore();
-    win.show();
+    fadeInWindow(win, 300);
     win.focus();
 }
 
@@ -31,7 +69,7 @@ export function applyStartupWindowVisibility(win: BrowserWindow): void {
             break;
         default:
             win.setSkipTaskbar(false);
-            win.show();
+            fadeInWindow(win, 500);
             break;
     }
 }

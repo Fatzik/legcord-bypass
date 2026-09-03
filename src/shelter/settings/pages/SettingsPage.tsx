@@ -38,6 +38,34 @@ export function SettingsPage() {
     const settings = store.settings as Settings;
     const t = store.i18n;
 
+    const [proxyStatus, setProxyStatus] = createSignal("");
+    const acceptProxyFlow = async (): Promise<void> => {
+        const raw = (settings.proxyPending ?? "").trim();
+        if (!raw) {
+            setProxyStatus("Введите прокси (например 72.56.38.111:10916)");
+            return;
+        }
+        setProxyStatus("Проверяем прокси (пинг)…");
+        const result = await window.legcord.settings.acceptProxy(raw).catch(() => ({
+            ok: false,
+            url: "",
+            ms: 0,
+            error: "Ошибка IPC",
+        }));
+        if (!result.ok) {
+            setProxyStatus(`Отклонено: ${result.error ?? "прокси не отвечает"}`);
+            return;
+        }
+        const entries = (settings.proxyCustomList ?? "")
+            .split(/[\r\n,;]+/)
+            .map((entry) => entry.trim())
+            .filter(Boolean);
+        if (!entries.includes(result.url)) entries.push(result.url);
+        setConfig("proxyCustomList", entries.join(", "), true);
+        if (settings.proxyAuto !== true) setConfig("proxyAuto", true, true);
+        setProxyStatus(`Принят: ${result.url} (${result.ms} мс)`);
+    };
+
     if (!settings) {
         return (
             <>
@@ -733,6 +761,30 @@ export function SettingsPage() {
                         />
                     </SearchableSetting>
                 </Show>
+                <SearchableSetting keywords={["Настройка прокси", "новый прокси", "принять", "accept"]}>
+                    <TextBoxItem
+                        title="Новый прокси"
+                        note='Например 72.56.38.111:10916 (пинг сначала проверится кнопкой "Принять прокси").'
+                        value={settings.proxyPending ?? ""}
+                        onInput={(v: string) => setConfig("proxyPending", v, true)}
+                    />
+                </SearchableSetting>
+                <SearchableSetting keywords={["Настройка прокси", "принять прокси", "accept"]}>
+                    <Button size={ButtonSizes.MAX} onClick={() => void acceptProxyFlow()}>
+                        Принять прокси
+                    </Button>
+                    <Show when={proxyStatus()}>
+                        <p
+                            style={{
+                                fontSize: "12px",
+                                color: proxyStatus().startsWith("Принят") ? "#3ba55d" : "#ed4245",
+                                margin: "6px 0 0",
+                            }}
+                        >
+                            {proxyStatus()}
+                        </p>
+                    </Show>
+                </SearchableSetting>
             </SettingsPanel>
 
             <SettingsPanel

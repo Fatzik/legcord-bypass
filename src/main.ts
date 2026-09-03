@@ -21,6 +21,7 @@ import { getPreset } from "./common/flags.js";
 import { setLang } from "./common/lang.js";
 import { applyProxyCommandLineSwitches, applySessionProxy, configureNodeProxyEnv } from "./common/proxy.js";
 import { prepareInitialProxy, startProxyWatcher, stopProxyWatcher } from "./common/proxySwitcher.js";
+import { startUpdateWatcher } from "./common/updateCheck.js";
 import { revealWindow } from "./common/windowVisibility.js";
 import { setupGlobalShortcuts, startDbusService } from "./dbus.js";
 
@@ -76,6 +77,8 @@ import { createSetupWindow } from "./setup/main.js";
 import { createSplashWindow } from "./splash/main.js";
 export let settings: Settings;
 export let bypassSetup = false;
+const startupT0 = Date.now();
+const startupLog = (msg: string): void => console.log(`[startup] ${msg} +${Date.now() - startupT0}ms`);
 checkForDataFolder();
 checkIfConfigExists();
 app.setAsDefaultProtocolClient("discord");
@@ -116,18 +119,6 @@ export async function init(): Promise<void> {
         if (getConfig("skipSplash") === false && !isBackgroundStart()) {
             void createSplashWindow(); // NOTE - Awaiting will hang at start
         }
-        // Guarantee a working proxy before Discord starts loading: pick a validated
-        // proxy from the (default) sources when Discord is not reachable directly.
-        if (getConfig("proxyAuto") !== false) {
-            try {
-                const initial = await prepareInitialProxy();
-                if (initial === "none") {
-                    console.error("[ProxyWatcher] No working proxy found at startup — Discord may fail to load.");
-                }
-            } catch (error) {
-                console.error("[ProxyWatcher] Initial proxy preparation failed:", error);
-            }
-        }
         createWindow();
     } else {
         setLang(new Intl.DateTimeFormat().resolvedOptions().locale);
@@ -144,6 +135,12 @@ export function handleRestart(exit_code = 0): void {
     }
     app.relaunch(options);
     app.exit(exit_code);
+}
+
+/** Fetch mod bundles + initialize plugins + load chrome extensions. Runs once, after proxy is ready. */
+async function loadModsAndPlugins(): Promise<void> {
+    await Promise.all([fetchMods(), initializePluginSystem()]);
+    void import("./discord/extensions/plugin.js"); // load chrome extensions
 }
 args();
 if (!app.requestSingleInstanceLock() && getConfig("multiInstance") === false) {
@@ -221,17 +218,9 @@ if (!app.requestSingleInstanceLock() && getConfig("multiInstance") === false) {
     trackSwitch("enable-transparent-visuals");
     checkIfConfigIsBroken();
     // Pick a working proxy BEFORE any GitHub-touching work (mod/plugin downloads,
-    // updater) and re-apply Node env so main-process fetches honor it too.
-    if (getConfig("proxyAuto") !== false) {
-        try {
-            const initial = await prepareInitialProxy();
-            if (initial === "none") {
-                console.error("[ProxyWatcher] No working proxy found before mod downloads — GitHub fetches may fail.");
-            }
-        } catch (error) {
-            console.error("[ProxyWatcher] Pre-download proxy preparation failed:", error);
-        }
-    }
+    // updater). Runs concurrently: the splash is created right after ready and this
+    // promise is awaited there, so the user never stares at a blank screen.
+    let proxyReadyPromise: Promise<void> = Promise.resolve();
     configureNodeProxyEnv();
     applyProxyCommandLineSwitches();
     const preset = getPreset();
@@ -247,8 +236,6 @@ if (!app.requestSingleInstanceLock() && getConfig("multiInstance") === false) {
             disableFeatures.add(val);
         });
     }
-    await Promise.all([fetchMods(), initializePluginSystem()]);
-    void import("./discord/extensions/plugin.js"); // load chrome extensions
     if (isDev) {
         console.log(`[Config Manager] Current config: ${readFileSync(getConfigLocation(), "utf-8")}`);
     }
@@ -374,9 +361,37 @@ if (!app.requestSingleInstanceLock() && getConfig("multiInstance") === false) {
     }
 
     void app.whenReady().then(async () => {
+        startupLog("whenReady fired");
         if (isDev) console.log(JSON.stringify(getAppliedFlags()));
+        // Show the splash IMMEDIATELY so the user sees progress while the proxy is
+        // prepared and mods are downloaded (both run on a visible splash).
+        if (!isBackgroundStart() && getConfig("skipSplash") === false) {
+            void createSplashWindow();
+        }
+        startupLog("splash requested");
+        if (getConfig("proxyAuto") !== false) {
+            proxyReadyPromise = prepareInitialProxy()
+                .then((initial) => {
+                    if (initial === "none") {
+                        console.error(
+                            "[ProxyWatcher] No working proxy found before mod downloads — GitHub fetches may fail.",
+                        );
+                    }
+                })
+                .catch((error) => console.error("[ProxyWatcher] Pre-download proxy preparation failed:", error));
+        }
+        // 1) Working proxy (also used for GitHub/mod downloads below).
+        await proxyReadyPromise;
+        startupLog("proxy ready");
+        // 2) Apply proxy to the Chromium session.
         await applySessionProxy();
+        startupLog("session proxy applied");
+        // 3) Mods/plugins — hard-capped at 2s so they can NEVER delay the window.
+        //    If they are still loading, we continue and they finish in the background.
+        await Promise.race([loadModsAndPlugins(), new Promise((resolve) => setTimeout(resolve, 2000))]);
+        startupLog("mods done/capped");
         startProxyWatcher();
+        startUpdateWatcher();
         process.on("SIGINT", () => app.quit());
         process.on("SIGTERM", () => app.quit());
         app.on("before-quit", () => {
@@ -388,8 +403,9 @@ if (!app.requestSingleInstanceLock() && getConfig("multiInstance") === false) {
                 init().then(() => {
                     resolve();
                 });
-            }, 1500),
+            }, 300),
         );
+        startupLog("init done");
         session.defaultSession.setPermissionRequestHandler(async (_webContents, permission, callback) => {
             switch (permission) {
                 case "fullscreen":

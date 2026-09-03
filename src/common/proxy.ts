@@ -122,7 +122,7 @@ export function configureNodeProxyEnv(): void {
     if (mode === "fixed_servers") {
         const rules = (getConfig("proxyRules") ?? "").trim();
         const proxyUrl = primaryProxyFromRules(rules);
-        if (proxyUrl) {
+        if (proxyUrl && /^(https?|socks):\/\//i.test(proxyUrl) && !/^socks\d*:\/\//i.test(proxyUrl)) {
             process.env.HTTP_PROXY = proxyUrl;
             process.env.HTTPS_PROXY = proxyUrl;
             process.env.http_proxy = proxyUrl;
@@ -134,6 +134,16 @@ export function configureNodeProxyEnv(): void {
                 process.env.no_proxy = noProxy;
             }
             console.log(`[Proxy] Node fetch: ${proxyUrl}`);
+            return;
+        }
+        if (proxyUrl && /^socks\d*:\/\//i.test(proxyUrl)) {
+            // Node's built-in env proxy support does not implement SOCKS. Keep
+            // main-process downloads direct instead of silently misrouting them.
+            process.env.HTTP_PROXY = "";
+            process.env.HTTPS_PROXY = "";
+            process.env.http_proxy = "";
+            process.env.https_proxy = "";
+            console.log("[Proxy] Node fetch: SOCKS proxy is Chromium-only");
             return;
         }
     }
@@ -189,12 +199,14 @@ export function applyProxyCommandLineSwitches(): void {
 }
 
 /** Apply proxy to the default session once Electron is ready. */
-export async function applySessionProxy(): Promise<void> {
+export async function applySessionProxy(closeConnections = true): Promise<void> {
     const config = resolveProxyConfig();
     console.log(`[Proxy] Applying session proxy: ${JSON.stringify(config)}`);
     try {
         await session.defaultSession.setProxy(config);
-        await session.defaultSession.closeAllConnections();
+        if (closeConnections) {
+            await session.defaultSession.closeAllConnections();
+        }
     } catch (error) {
         console.error("[Proxy] Failed to apply session proxy:", error);
     }

@@ -98,6 +98,10 @@ export interface Settings {
     proxySources?: string;
     /** User-provided proxies (scheme://host:port), comma or line separated. */
     proxyCustomList?: string;
+    /** Pending user proxy input in the "accept proxy" field. */
+    proxyPending?: string;
+    /** Auto-fix stuck voice connections by switching proxy. */
+    voiceAutoProxyFix?: boolean;
     noBundleUpdates: ValidMods[];
     automaticUpdates: boolean;
     overlayButtonColor: string;

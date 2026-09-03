@@ -78,6 +78,8 @@ const defaults: Settings = {
     proxyThreshold: 100,
     proxySources: "",
     proxyCustomList: "",
+    proxyPending: "",
+    voiceAutoProxyFix: true,
     customIcon: join(import.meta.dirname, "../", "/assets/desktop.png"),
     smoothScroll: true,
     autoScroll: false,

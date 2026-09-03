@@ -52,6 +52,7 @@ export interface LegcordWindow {
         addKeybind: (keybind: Keybind) => void;
         toggleKeybind: (id: string) => void;
         removeKeybind: (id: string) => void;
+        acceptProxy: (value: string) => Promise<{ ok: boolean; url: string; ms: number; error?: string }>;
     };
     touchbar: {
         setVoiceTouchbar: (state: boolean) => void;

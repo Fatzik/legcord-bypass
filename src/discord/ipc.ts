@@ -21,6 +21,7 @@ import {
 import { getConfig, getConfigLocation, setConfig, setConfigBulk } from "../common/config.js";
 import { addDetectable, getDetectables, removeDetectable } from "../common/detectables.js";
 import { getLang, getLangName, getRawLang, setLang } from "../common/lang.js";
+import { acceptCustomProxy } from "../common/proxySwitcher.js";
 import {
     disableQuickCss,
     getCachedThemeList,
@@ -384,6 +385,7 @@ export function registerIpc(passedWindow: BrowserWindow): void {
     ipcMain.on("copyGPUInfo", () => {
         clipboard.writeText(JSON.stringify(app.getGPUFeatureStatus()));
     });
+    ipcMain.handle("acceptProxy", (_event, raw: string) => acceptCustomProxy(String(raw ?? "")));
     ipcMain.on("openWebRTCInternals", () => {
         openChromeInternalsPage("chrome://webrtc-internals/", "WebRTC Internals");
     });

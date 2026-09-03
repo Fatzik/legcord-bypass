@@ -9,7 +9,6 @@ const launch = ipcRenderer.sendSync("splash-launch") as LaunchIpcStatus;
 
 contextBridge.exposeInMainWorld("internal", {
     restart: () => ipcRenderer.send("restart"),
-    version: ipcRenderer.sendSync("get-app-version", "app-version") as string,
     isDev: ipcRenderer.sendSync("splash-isDev") as string,
     isMicrosoftStore: ipcRenderer.sendSync("splash-isMicrosoftStore") as string,
     mods: ipcRenderer.sendSync("splash-clientmod") as string,
@@ -18,7 +17,22 @@ contextBridge.exposeInMainWorld("internal", {
             return result;
         }),
     splashEnd: () => ipcRenderer.send("splashEnd"),
+    acceptProxy: (value: string) =>
+        ipcRenderer.invoke("splash-accept-proxy", value) as Promise<{
+            ok: boolean;
+            url: string;
+            ms: number;
+            error?: string;
+        }>,
     launch,
+    getLaunchStatus: () => ipcRenderer.sendSync("splash-launch-now") as LaunchIpcStatus,
+    onProxyPhase: (callback: (text: string) => void) => {
+        const handler = (_event: IpcRendererEvent, text: string) => {
+            callback(text);
+        };
+        ipcRenderer.on("proxy-phase", handler);
+        return () => ipcRenderer.removeListener("proxy-phase", handler);
+    },
     onLaunchStatus: (callback: (status: LaunchIpcStatus) => void) => {
         const handler = (_event: IpcRendererEvent, status: LaunchIpcStatus) => {
             callback(status);
